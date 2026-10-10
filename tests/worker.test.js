@@ -1,0 +1,55 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {authorize, allowedRoute, handleRequest, digest} from '../cloudflare/access.js';
+
+const password = 'test-only-password-123456789';
+const authorization = `Basic ${btoa(`samuel:${password}`)}`;
+const env = {AUTH_USER: 'samuel', AUTH_PASSWORD: password};
+const req = (path = '/', options = {}) => new Request(`https://video.example${path}`, options);
+
+test('missing secrets fail closed without starting any container', async () => {
+  assert.equal((await handleRequest(req(), {})).status, 503);
+});
+test('anonymous and malformed credentials are rejected before container access', async () => {
+  for (const header of ['', 'Basic %%%', `Basic ${btoa('samuel:wrong')}`]) {
+    assert.equal((await authorize(req('/', {headers: {Authorization: header}}), env)).status, 401);
+  }
+});
+test('correct login works and cross-site state changes are blocked', async () => {
+  assert.equal(await authorize(req('/', {headers: {Authorization: authorization}}), env), null);
+  const crossSite = req('/api/download', {method: 'POST', headers: {
+    Authorization: authorization, Origin: 'https://other.example',
+  }});
+  assert.equal((await authorize(crossSite, env)).status, 403);
+});
+test('desktop control routes and unsupported methods are not exposed', () => {
+  assert.equal(allowedRoute('/api/integration/update', 'POST'), false);
+  assert.equal(allowedRoute('/api/download', 'DELETE'), false);
+  assert.equal(allowedRoute('/api/download/' + 'a'.repeat(32) + '/file', 'GET'), true);
+});
+test('forwarding uses one stable instance, replaces spoofed tokens and streams files', async () => {
+  let upstream;
+  const backend = {...env, DOWNLOADER: {getByName(name) {
+    assert.equal(name, 'personal-downloader');
+    return {fetch(request) {
+      upstream = request;
+      return new Response('file-bytes', {headers: {'Content-Disposition': 'attachment; filename="video.mp4"'}});
+    }};
+  }}};
+  const response = await handleRequest(req('/api/download/' + 'a'.repeat(32) + '/file', {headers: {
+    Authorization: authorization, 'X-Backend-Token': 'spoof', Cookie: 'private=cookie', Range: 'bytes=0-9',
+  }}), backend);
+  assert.equal(upstream.headers.get('X-Backend-Token'), await digest(`backend:${password}`));
+  assert.equal(upstream.headers.get('Authorization'), null);
+  assert.equal(upstream.headers.get('Cookie'), null);
+  assert.equal(upstream.headers.get('Range'), 'bytes=0-9');
+  assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+  assert.match(response.headers.get('Content-Disposition'), /attachment/);
+  assert.equal(await response.text(), 'file-bytes');
+});
+test('container startup failure returns a retryable error', async () => {
+  const broken = {...env, DOWNLOADER: {getByName() {return {fetch() {throw new Error('internal detail');}};}}};
+  const response = await handleRequest(req('/', {headers: {Authorization: authorization}}), broken);
+  assert.equal(response.status, 503);
+  assert.doesNotMatch(await response.text(), /internal detail/);
+});

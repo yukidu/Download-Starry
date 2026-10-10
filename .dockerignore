@@ -1,0 +1,12 @@
+*
+!app.py
+!VERSION
+!requirements.txt
+!deployment/
+!deployment/requirements.txt
+!deployment/server.py
+!deployment/__init__.py
+!templates/
+!templates/**
+!static/
+!static/**

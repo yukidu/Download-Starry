@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="integration-token" content="{{ integration_token }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>寰宇台南 影片下載工具</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+</head>
+<body>
+  <div class="glow glow-one"></div><div class="glow glow-two"></div>
+  <nav><span></span><span class="local-pill"><i></i> {{ '雲端處理 · 儲存到你的裝置' if cloud_mode else '本機處理' }}</span></nav>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">簡單、快速、無干擾</div>
+      <h1>寰宇台南<br><span>影片下載工具</span></h1>
+      <p>貼上 YouTube、Instagram 或 Facebook 影片連結，選擇影片畫質或轉為 MP3。{{ '處理完成後，直接儲存到你的電腦或手機。' if cloud_mode else '檔案在你的電腦上處理，不經第三方服務。' }}</p>
+    </section>
+
+    {% if not cloud_mode %}
+    <section class="integration-bar" aria-label="更多下載功能">
+      <div><strong>微信影音號</strong><p>在電腦版微信播放影片，再使用輔助工具下載。無需分享網址。</p></div>
+      <button id="open-wechat" type="button">開啟微信影音號工具</button>
+    </section>
+    <section class="component-strip" aria-label="元件維護"><span id="component-status" role="status">啟動時檢查下載元件…</span><button id="check-components" type="button">檢查元件</button></section>
+    {% endif %}
+    <section class="downloader" aria-label="下載工具">
+      <form id="lookup-form" class="url-row">
+        <span class="link-icon">↗</span>
+        <input id="url" type="url" required autocomplete="off" placeholder="貼上 YouTube、Instagram 或 Facebook 影片網址…" aria-label="影片網址">
+        <button id="lookup-button" type="submit">解析影片 <span>→</span></button>
+      </form>
+      <div id="message" class="message" role="alert"></div>
+
+      <div id="result" class="result" hidden>
+        <div class="media-card">
+          <div class="thumb-wrap"><img id="thumbnail" alt="影片縮圖"><span id="duration" class="duration"></span></div>
+          <div class="media-meta"><span id="channel"></span><h2 id="title"></h2></div>
+        </div>
+
+        <div id="download-form">
+          <div class="type-tabs" role="tablist">
+            <button class="type-tab active" type="button" data-type="video"><span>▣</span> 影片 MP4</button>
+            <button class="type-tab" type="button" data-type="audio"><span>♫</span> 音訊 MP3</button>
+            <button id="subtitle-tab" class="type-tab" type="button" data-type="subtitle" hidden><span>CC</span> CC 字幕</button>
+          </div>
+          <input id="download-url" name="url" type="hidden"><input id="download-type" name="type" value="video" type="hidden">
+          <label id="quality-group">選擇畫質<select id="quality" name="quality"></select></label>
+          <div id="audio-note" class="audio-note" hidden><span>♫</span><div><strong>高品質 MP3</strong><small>192 kbps · 適合音樂與 Podcast</small></div></div>
+          <label id="subtitle-group" hidden>選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
+          <button id="download-button" class="download-button" type="button"><span>↓</span> 開始下載</button>
+          <div id="download-progress" class="download-progress" hidden aria-live="polite">
+            <div class="progress-heading">
+              <span id="progress-status">準備下載</span>
+              <div class="progress-actions"><strong id="progress-percent">0%</strong><button id="stop-download" class="stop-download" type="button" hidden>■ 停止下載</button></div>
+            </div>
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div class="progress-detail"><span id="progress-size"></span><span id="progress-speed"></span><span id="progress-eta"></span></div>
+          </div>
+          <p class="fine-print">下載時間取決於影片長度與網路速度，請勿關閉此頁面。{% if cloud_mode %} 單次來源資料上限 512 MB；檔案僅短暫處理，不建立雲端影片庫。手機可在瀏覽器的「下載項目」找到檔案。{% endif %}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <article><span>◇</span><div><h3>自由選擇畫質</h3><p>自動偵測影片可用解析度，最高支援 4K 以上。</p></div></article>
+      <article><span>♬</span><div><h3>一鍵轉成 MP3</h3><p>擷取高品質音訊，方便離線收聽與收藏。</p></div></article>
+      <article><span>⌁</span><div><h3>{{ '儲存到自己的裝置' if cloud_mode else '保留你的隱私' }}</h3><p>{{ '檔案傳送後短暫保留供續傳，隨後自動清除；未取回的檔案約 15 分鐘後清除。' if cloud_mode else '工具在本機執行，不建立帳號；僅保留故障分析所需的診斷日誌。' }}</p></div></article>
+    </section>
+  </main>
+  <footer>請僅下載你擁有權利或已獲授權的內容。<span>v{{ app_version }} · Designed by Samuel Tuan</span></footer>
+  <dialog id="playlist-dialog" class="playlist-dialog">
+    <div class="playlist-dialog-icon">▤</div>
+    <h2>偵測到播放清單</h2>
+    <p id="playlist-description"></p>
+    <p class="playlist-note">選擇「下載全部」後，請指定儲存資料夾。影片會依序下載為 MP4，並顯示整批進度。</p>
+    <div class="playlist-dialog-actions">
+      <button id="playlist-single" class="dialog-secondary" type="button">只下載目前影片</button>
+      <button id="playlist-all" class="dialog-primary" type="button">選擇資料夾並下載全部</button>
+    </div>
+  </dialog>
+  {% if not cloud_mode %}
+  <dialog id="components-dialog" class="playlist-dialog" aria-labelledby="components-title">
+    <h2 id="components-title">下載元件檢查</h2>
+    <p>缺少或較舊的元件可在此修復與更新。下載後會先校驗，重新啟動工具才套用。</p>
+    <div id="components-list"></div>
+    <p id="components-feedback" role="status"></p>
+    <div class="playlist-dialog-actions"><button id="components-later" class="dialog-secondary" type="button">稍後處理</button><button id="components-update" class="dialog-primary" type="button">更新勾選元件</button></div>
+  </dialog>
+  {% endif %}
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% if not cloud_mode %}
+  <script src="{{ url_for('static', filename='integration.js') }}"></script>
+  {% endif %}
+</body>
+</html>

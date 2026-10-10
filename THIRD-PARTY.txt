@@ -1,0 +1,6 @@
+Python: runtime/LICENSE.txt
+Python packages: runtime/Lib/site-packages/*.dist-info/licenses and METADATA
+FFmpeg (Gyan): runtime/ffmpeg/LICENSE.txt; https://github.com/GyanD/codexffmpeg
+Deno: runtime/deno/LICENSE.txt; https://github.com/denoland/deno
+WeChat engine: wechat-channels/engine/LICENSE.upstream.txt; https://github.com/ltaoo/wx_channels_download
+WeChat engine MIT + Commons Clause: functionality may not be sold.
