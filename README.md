@@ -2,7 +2,11 @@
 
 給音響組使用的社群影音下載工具。
 
-## Cloudflare 雲端版（部署準備中）
+## Cloudflare 雲端版（已上線）
+
+正式網址：https://savevideo.yukidu.workers.dev （需要登入）
+
+GitHub `main` 更新後，通過測試與容器建置即自動部署到 Cloudflare。
 
 雲端處理影片後，透過瀏覽器下載至使用者自己的電腦或手機；**不使用 R2、不建立雲端影片庫**。登入保護、暫存清理與 GitHub 自動部署設定已加入。部署方式、費用估算與目前限制請參閱 [雲端部署說明](deployment/README.md)。
 

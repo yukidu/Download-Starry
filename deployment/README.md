@@ -2,7 +2,7 @@
 
 影片從社群網站下載到容器的暫存目錄，經 FFmpeg 處理後，使用者以瀏覽器下載到自己的電腦或手機。**不使用 R2，不建立雲端影片庫。**
 
-## 已準備的部署內容
+## 已部署的內容
 
 - `Dockerfile`：Python 3.12、FFmpeg、Deno、yt-dlp 及 Gunicorn。
 - `cloudflare/worker.js`：單一 Cloudflare Container，閒置 2 分鐘後休眠。
@@ -15,7 +15,7 @@
 - 休眠、重啟及重新部署可能清除尚未取回的暫存和下載工作；請在處理完成後立即下載。
 - Windows 微信擷取與攜帶版元件更新只在本機模式提供。
 
-## 費用提案（尚未啟用）
+## 費用說明（使用者已同意啟用）
 
 查核來源：https://developers.cloudflare.com/containers/platform/pricing/
 
@@ -42,7 +42,13 @@ Workers Paid 基本費 **US$5/月**。若帳號已有此方案，是否增加基
 
 最低方案有月費，**不是下載到第幾部才開始付費**。單一容器與檔案大小限制可控制規模，不能保證硬性帳單上限。應先完成少量實際測試，再依用量資料調整。
 
-## 上線步驟
+## 上線驗證紀錄
+
+2026-10-12（台灣時間）：GitHub Actions 正式部署成功，已設定登入密碼。匿名請求回傳 401；登入後健康檢查回傳 200。實際解析 YouTube 的 Big Buck Bunny，完成 144p MP4 下載至本機（13,626,155 bytes）。此結果僅驗證該公開影片，不代表所有平台或影片皆可下載。
+
+正式網址：https://savevideo.yukidu.workers.dev
+
+## 部署設定步驟（已完成）
 
 1. 建立私人 GitHub 儲存庫 `yukidu/SaveVideo`，只上傳程式與設定。
 2. Cloudflare 登入並確認帳號；使用者確認上述價格後才啟用 Workers Paid 或付費部署。
