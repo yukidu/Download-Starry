@@ -31,7 +31,7 @@ export async function authorize(request, env) {
   } catch { /* Treat malformed Base64 as unauthenticated. */ }
   if (!await equalSecret(credentials, `${env.AUTH_USER || 'samuel'}:${env.AUTH_PASSWORD}`)) {
     return errorResponse('請輸入此工具的使用者名稱與密碼', 401, {
-      'WWW-Authenticate': 'Basic realm="Huanyu Downloader", charset="UTF-8"',
+      'WWW-Authenticate': 'Basic realm="SaveVideo", charset="UTF-8"',
     });
   }
   if (!['GET', 'HEAD'].includes(request.method)) {

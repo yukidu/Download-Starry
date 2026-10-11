@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="integration-token" content="{{ integration_token }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>寰宇台南 影片下載工具</title>
+  <title>SaveVideo · 音響組社群影音下載工具</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +17,8 @@
   <nav><span></span><span class="local-pill"><i></i> {{ '雲端處理 · 儲存到你的裝置' if cloud_mode else '本機處理' }}</span></nav>
   <main>
     <section class="hero">
-      <div class="eyebrow">簡單、快速、無干擾</div>
-      <h1>寰宇台南<br><span>影片下載工具</span></h1>
+      <div class="eyebrow">音響組專用 · 簡單、快速</div>
+      <h1>SaveVideo<br><span>社群影音下載工具</span></h1>
       <p>貼上 YouTube、Instagram 或 Facebook 影片連結，選擇影片畫質或轉為 MP3。{{ '處理完成後，直接儲存到你的電腦或手機。' if cloud_mode else '檔案在你的電腦上處理，不經第三方服務。' }}</p>
     </section>
 

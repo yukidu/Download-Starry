@@ -1,4 +1,4 @@
-# GitHub → Cloudflare 雲端部署
+# SaveVideo：GitHub → Cloudflare 雲端部署
 
 影片從社群網站下載到容器的暫存目錄，經 FFmpeg 處理後，使用者以瀏覽器下載到自己的電腦或手機。**不使用 R2，不建立雲端影片庫。**
 
@@ -44,7 +44,7 @@ Workers Paid 基本費 **US$5/月**。若帳號已有此方案，是否增加基
 
 ## 上線步驟
 
-1. 建立私人 GitHub 儲存庫 `yukidu/huanyu-video-downloader`，只上傳程式與設定。
+1. 建立私人 GitHub 儲存庫 `yukidu/SaveVideo`，只上傳程式與設定。
 2. Cloudflare 登入並確認帳號；使用者確認上述價格後才啟用 Workers Paid 或付費部署。
 3. 在 GitHub repository secrets 設定 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。Token 應限定此 Cloudflare 帳號並包含 Workers、Durable Objects、Containers 及映像檔部署所需權限。
 4. 先執行測試流程；確認容器能成功建置。

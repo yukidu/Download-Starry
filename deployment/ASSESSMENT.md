@@ -24,7 +24,7 @@ Workers Paid 基本費 US$5/月；另有容器 CPU、記憶體、磁碟、傳出
 ## 帳號連接狀態
 
 - 已確認 GitHub 連接帳號為 yukidu。
-- 已安裝並登入 GitHub CLI，建立私人儲存庫 `yukidu/huanyu-video-downloader`。
+- 已安裝並登入 GitHub CLI，建立私人儲存庫 `yukidu/SaveVideo`。
 - 已安裝並登入 Cloudflare Wrangler；已確認 workers.dev 子網域為 `yukidu`。
 - Plugin Management 未找到可用的 Cloudflare 外掛。
 - 2026-10-11：本機 15 項程式測試、Worker 打包，以及桌面／手機尺寸瀏覽器模擬下載測試通過。正式社群影片與容器建置仍待驗證。

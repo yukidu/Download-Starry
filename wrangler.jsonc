@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "huanyu-video-downloader",
+  "name": "savevideo",
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-10-10",
   "containers": [{
