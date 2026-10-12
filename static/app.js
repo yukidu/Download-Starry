@@ -1,9 +1,20 @@
 'use strict';
 (() => {
+  const head = document.head;
   const manifest = document.createElement('link');
   manifest.rel = 'manifest';
   manifest.href = '/static/manifest.webmanifest';
-  document.head.appendChild(manifest);
+  head.appendChild(manifest);
+  for (const [name, content] of [
+    ['theme-color', '#0b1026'],
+    ['apple-mobile-web-app-capable', 'yes'],
+    ['apple-mobile-web-app-status-bar-style', 'black-translucent'],
+  ]) {
+    const meta = document.createElement('meta');
+    meta.name = name;
+    meta.content = content;
+    head.appendChild(meta);
+  }
 
   const sources = ['/static/platform.js', '/static/api.js', '/static/app-core.js'];
   sources.forEach(href => {
@@ -11,17 +22,15 @@
     link.rel = 'preload';
     link.as = 'script';
     link.href = href;
-    document.head.appendChild(link);
+    head.appendChild(link);
   });
-
   const load = src => new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
     script.onload = resolve;
     script.onerror = () => reject(new Error(`無法載入 ${src}`));
-    document.head.appendChild(script);
+    head.appendChild(script);
   });
-
   Promise.all([load(sources[0]), load(sources[1])])
     .then(() => load(sources[2]))
     .catch(error => {
