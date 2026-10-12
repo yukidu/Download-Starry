@@ -4,35 +4,99 @@
   <meta charset="utf-8">
   <meta name="integration-token" content="{{ integration_token }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SaveVideo · 音響組社群影音下載工具</title>
+  <meta name="color-scheme" content="light dark">
+  <title>繁星回憶（串流影音下載）</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Noto+Sans+TC:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
 </head>
 <body>
-  <div class="glow glow-one"></div><div class="glow glow-two"></div>
-  <nav><span></span><span class="local-pill"><i></i> {{ '雲端處理 · 儲存到你的裝置' if cloud_mode else '本機處理' }}</span></nav>
+  <div class="cosmic-scene" aria-hidden="true">
+    <span class="cosmic-orb cosmic-orb-a"></span>
+    <span class="cosmic-orb cosmic-orb-b"></span>
+    <span class="cosmic-orb cosmic-orb-c"></span>
+    <span class="cosmic-grid"></span>
+  </div>
+
+  <header id="site-header" class="site-header">
+    <div class="site-header-row">
+      <button class="site-brand" type="button" data-menu-action="home" aria-label="返回首頁">
+        <span class="site-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M8.2 5.6v12.8c0 1.2 1.3 1.9 2.3 1.2l9-6.4c.9-.6.9-1.9 0-2.5l-9-6.3c-1-.7-2.3 0-2.3 1.2Z" fill="currentColor"/></svg>
+          <span class="site-brand-ring"></span>
+        </span>
+        <span class="site-brand-text">繁星回憶</span>
+        <span class="site-brand-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </button>
+
+      <div class="top-actions" aria-label="置頂主選單">
+        <button id="top-theme-toggle" class="top-action-button" type="button" aria-label="關燈" title="關燈">
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.3A8.4 8.4 0 0 1 8.7 3.6 8.7 8.7 0 1 0 20.4 15.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <button id="menu-toggle" class="hamburger-button" type="button" aria-label="主選單" aria-expanded="false" aria-controls="main-menu" title="開啟主選單">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div id="main-menu" class="main-menu-shell" hidden>
+      <div class="main-menu-panel" role="menu" aria-label="主選單">
+        <button class="main-menu-row" type="button" role="menuitem" data-menu-action="home">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <span>回首頁</span>
+        </button>
+        <button class="main-menu-row" type="button" role="menuitem" data-menu-action="focus-url">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a4 4 0 0 0 5.7 0l2.1-2.1a4 4 0 0 0-5.7-5.7l-1.2 1.2M13.4 10.6a4 4 0 0 0-5.7 0l-2.1 2.1a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>貼上影音連結</span>
+        </button>
+        <button id="menu-theme-toggle" class="main-menu-row" type="button" role="menuitem">
+          <svg class="menu-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.3A8.4 8.4 0 0 1 8.7 3.6 8.7 8.7 0 1 0 20.4 15.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="menu-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span id="menu-theme-label">關燈</span>
+        </button>
+        {% if not cloud_mode %}
+        <button id="open-wechat" class="main-menu-row" type="button" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.4 5C4.9 5 2 7.3 2 10.2c0 1.7 1 3.2 2.5 4.2l-.7 2.3 2.7-1.3c.6.1 1.2.2 1.9.2.4 0 .8 0 1.2-.1-.4-.7-.6-1.5-.6-2.3 0-3.1 3-5.6 6.8-5.6h.2C14.8 6 11.8 5 8.4 5Z" fill="currentColor" opacity=".9"/><path d="M22 13.2c0-2.5-2.6-4.6-5.8-4.6s-5.8 2.1-5.8 4.6 2.6 4.6 5.8 4.6c.6 0 1.1-.1 1.7-.2l2.4 1.2-.6-2c1.4-.8 2.3-2.1 2.3-3.6Z" fill="currentColor"/></svg>
+          <span>微信影音號工具</span>
+        </button>
+        <button id="check-components" class="main-menu-row" type="button" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>檢查元件</span>
+        </button>
+        <span id="component-status" class="sr-only" role="status">啟動時檢查下載元件…</span>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
   <main>
-    <section class="hero">
-      <div class="eyebrow">音響組專用 · 簡單、快速</div>
-      <h1>SaveVideo<br><span>社群影音下載工具</span></h1>
-      <p>貼上 YouTube、Instagram、Facebook 或微信視頻號 影片連結，選擇影片畫質或轉為 MP3。{{ '處理完成後，直接儲存到你的電腦或手機。' if cloud_mode else '檔案在你的電腦上處理，不經第三方服務。' }}</p>
+    <section class="hero" aria-labelledby="page-title">
+      <h1 id="page-title">繁星回憶<span>（串流影音下載）</span></h1>
+      <div class="platform-icons" aria-label="支援的平台">
+        <span class="platform-icon platform-youtube" title="YouTube" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.6.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2 12a29 29 0 0 0 .4 4.8 2.8 2.8 0 0 0 2 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22 12a29 29 0 0 0-.4-4.8Z" fill="currentColor"/><path d="m10 15.3 5-3.3-5-3.3v6.6Z" fill="white"/></svg>
+        </span>
+        <span class="platform-icon platform-instagram" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17.5" cy="6.6" r="1.25" fill="currentColor"/></svg>
+        </span>
+        <span class="platform-icon platform-facebook" title="Facebook" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5h1.7V3.7c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2H8V13h2.8v8h3.4Z" fill="currentColor"/></svg>
+        </span>
+        <span class="platform-icon platform-wechat" title="微信影音號／視頻號" aria-label="微信影音號／視頻號">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.2C4.8 4.2 2 6.5 2 9.3c0 1.6.9 3.1 2.4 4.1l-.7 2.2 2.6-1.2c.6.1 1.3.2 2 .2.5 0 1 0 1.4-.1a5.4 5.4 0 0 1-.5-2.2c0-3.1 2.9-5.5 6.6-5.5h.3c-1.3-1.6-4-2.6-6.8-2.6Z" fill="currentColor" opacity=".85"/><path d="M22 12.4c0-2.4-2.5-4.4-5.7-4.4-3.1 0-5.7 2-5.7 4.4s2.6 4.4 5.7 4.4c.6 0 1.2-.1 1.7-.2l2.3 1.2-.6-2c1.4-.8 2.3-2 2.3-3.4Z" fill="currentColor"/></svg>
+        </span>
+      </div>
     </section>
 
-    {% if not cloud_mode %}
-    <section class="integration-bar" aria-label="更多下載功能">
-      <div><strong>微信影音號</strong><p>在電腦版微信播放影片，再使用輔助工具下載。無需分享網址。</p></div>
-      <button id="open-wechat" type="button">開啟微信影音號工具</button>
-    </section>
-    <section class="component-strip" aria-label="元件維護"><span id="component-status" role="status">啟動時檢查下載元件…</span><button id="check-components" type="button">檢查元件</button></section>
-    {% endif %}
     <section class="downloader" aria-label="下載工具">
       <form id="lookup-form" class="url-row">
-        <span class="link-icon">↗</span>
-        <input id="url" type="url" required autocomplete="off" placeholder="貼上 YouTube、Instagram、Facebook 或微信視頻號 影片網址…" aria-label="影片網址">
+        <span class="link-icon" aria-hidden="true">↗</span>
+        <input id="url" type="url" required autocomplete="off" placeholder="貼上影音網址…" aria-label="影音網址">
         <button id="lookup-button" type="submit">解析影片 <span>→</span></button>
       </form>
       <div id="message" class="message" role="alert"></div>
@@ -51,7 +115,7 @@
           </div>
           <input id="download-url" name="url" type="hidden"><input id="download-type" name="type" value="video" type="hidden">
           <label id="quality-group">選擇畫質<select id="quality" name="quality"></select></label>
-          <div id="audio-note" class="audio-note" hidden><span>♫</span><div><strong>高品質 MP3</strong><small>192 kbps · 適合音樂與 Podcast</small></div></div>
+          <div id="audio-note" class="audio-note" hidden><span>♫</span><div><strong>MP3 音訊</strong></div></div>
           <label id="subtitle-group" hidden>選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
           <button id="download-button" class="download-button" type="button"><span>↓</span> 開始下載</button>
           <div id="download-progress" class="download-progress" hidden aria-live="polite">
@@ -64,38 +128,34 @@
             </div>
             <div class="progress-detail"><span id="progress-size"></span><span id="progress-speed"></span><span id="progress-eta"></span></div>
           </div>
-          <p class="fine-print">下載時間取決於影片長度與網路速度，請勿關閉此頁面。{% if cloud_mode %} 單次來源資料上限 512 MB；檔案僅短暫處理，不建立雲端影片庫。手機可在瀏覽器的「下載項目」找到檔案。{% endif %}</p>
         </div>
       </div>
     </section>
-
-    <section class="features">
-      <article><span>◇</span><div><h3>自由選擇畫質</h3><p>自動偵測影片可用解析度，最高支援 4K 以上。</p></div></article>
-      <article><span>♬</span><div><h3>一鍵轉成 MP3</h3><p>擷取高品質音訊，方便離線收聽與收藏。</p></div></article>
-      <article><span>⌁</span><div><h3>{{ '儲存到自己的裝置' if cloud_mode else '保留你的隱私' }}</h3><p>{{ '檔案傳送後短暫保留供續傳，隨後自動清除；未取回的檔案約 15 分鐘後清除。' if cloud_mode else '工具在本機執行，不建立帳號；僅保留故障分析所需的診斷日誌。' }}</p></div></article>
-    </section>
   </main>
-  <footer>請僅下載你擁有權利或已獲授權的內容。<span>v{{ app_version }} · Designed by Samuel Tuan</span></footer>
+
+  <footer>系統開發者 段承志、杜杜龍 2026</footer>
+
   <dialog id="playlist-dialog" class="playlist-dialog">
     <div class="playlist-dialog-icon">▤</div>
     <h2>偵測到播放清單</h2>
     <p id="playlist-description"></p>
-    <p class="playlist-note">選擇「下載全部」後，請指定儲存資料夾。影片會依序下載為 MP4，並顯示整批進度。</p>
     <div class="playlist-dialog-actions">
       <button id="playlist-single" class="dialog-secondary" type="button">只下載目前影片</button>
-      <button id="playlist-all" class="dialog-primary" type="button">選擇資料夾並下載全部</button>
+      <button id="playlist-all" class="dialog-primary" type="button">下載全部</button>
     </div>
   </dialog>
+
   {% if not cloud_mode %}
   <dialog id="components-dialog" class="playlist-dialog" aria-labelledby="components-title">
-    <h2 id="components-title">下載元件檢查</h2>
-    <p>缺少或較舊的元件可在此修復與更新。下載後會先校驗，重新啟動工具才套用。</p>
+    <h2 id="components-title">下載元件</h2>
     <div id="components-list"></div>
     <p id="components-feedback" role="status"></p>
-    <div class="playlist-dialog-actions"><button id="components-later" class="dialog-secondary" type="button">稍後處理</button><button id="components-update" class="dialog-primary" type="button">更新勾選元件</button></div>
+    <div class="playlist-dialog-actions"><button id="components-later" class="dialog-secondary" type="button">關閉</button><button id="components-update" class="dialog-primary" type="button">更新勾選元件</button></div>
   </dialog>
   {% endif %}
+
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='ui.js') }}"></script>
   {% if not cloud_mode %}
   <script src="{{ url_for('static', filename='integration.js') }}"></script>
   {% endif %}

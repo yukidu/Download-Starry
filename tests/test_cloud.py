@@ -28,7 +28,14 @@ def test_authentication_and_cloud_ui(client):
     assert client.post('/api/info', json={'url': 'https://youtu.be/example'}).status_code == 401
     response = client.get('/', headers=HEADERS)
     assert response.status_code == 200
-    assert '儲存到你的裝置' in response.text
+    assert '繁星回憶（串流影音下載）' in response.text
+    assert '系統開發者 段承志、杜杜龍 2026' in response.text
+    assert 'id="menu-toggle"' in response.text
+    assert 'id="top-theme-toggle"' in response.text
+    assert 'static/ui.js' in response.text
+    assert '自由選擇畫質' not in response.text
+    assert '下載時間取決於影片長度與網路速度' not in response.text
+    assert '儲存到你的裝置' not in response.text
     assert 'open-wechat' not in response.text
     assert 'integration.js' not in response.text
     assert client.post('/api/integration/update', headers=HEADERS).status_code == 404
