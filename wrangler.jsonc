@@ -3,6 +3,10 @@
   "name": "savevideo",
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-10-10",
+  "routes": [{
+    "pattern": "download.starry.phd",
+    "custom_domain": true
+  }],
   "containers": [{
     "class_name": "VideoDownloader",
     "image": "./Dockerfile",
