@@ -63,7 +63,7 @@ SaveVideo 是 Flask + 原生 JavaScript / HTML / CSS + Cloudflare Workers / Cont
 
 - Capacitor-ready 前首頁 JS：62,596 bytes（約 62.6 KB）。
 - 第一版架構升級後：73,550 bytes（約 73.6 KB，+17.5%），不符合效能目標，因此已再精簡。
-- 本輪修正後首頁 JS：約 68.7 KB，較原始版本約 +9.8%。
+- 本輪修正後首頁 JS：68,817 bytes（約 68.8 KB，+9.94%）。
 - 首頁 CSS：35,899 bytes（約 35.9 KB），前後不變。
 - 新增 production dependency：0。
 - Capacitor / Firebase / Native Plugin：0。
@@ -79,7 +79,8 @@ bootstrap 會立即 preload Platform / API / shared core，Platform 與 API 平�
 - 不監聽未使用的 `beforeinstallprompt`。
 - Service Worker 不再對每個靜態資源背景 re-fetch。
 - Service Worker 註冊延後至 browser idle。
-- 沒有新增 polling、全域 state、Context、Native initialization 或重複 API request。
+- 沒有因 Capacitor-ready 新增 polling、全域 state、Context、Native initialization 或重複 API request。
+- 下載進行中的 750ms progress polling 是原本既有且必要的下載進度機制，不是本次架構新增。
 
 ## 未來真正加入 Android / iOS 時
 
