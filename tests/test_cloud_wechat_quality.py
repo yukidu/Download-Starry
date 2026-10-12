@@ -1,15 +1,7 @@
-import importlib
-import sys
+import wechat_cloud
 
 
-def _load_server(monkeypatch):
-    monkeypatch.setenv('CLOUD_BACKEND_TOKEN', 'x' * 32)
-    sys.modules.pop('deployment.server', None)
-    return importlib.import_module('deployment.server')
-
-
-def test_cloud_prefers_object_desc_media_over_preview_variants(monkeypatch):
-    server = _load_server(monkeypatch)
+def test_cloud_prefers_object_desc_media_over_preview_variants():
     detail = {
         'object': {
             'objectDesc': {
@@ -30,15 +22,14 @@ def test_cloud_prefers_object_desc_media_over_preview_variants(monkeypatch):
         },
     }
 
-    url, decode_key, encrypted_bytes, source = server._cloud_best_wechat_video(detail)
+    url, decode_key, encrypted_bytes, source = wechat_cloud.best_video(detail)
     assert url == 'https://wxapp.tc.qq.com/251/20304/full-quality.mp4?token=full'
     assert decode_key == '123'
     assert encrypted_bytes == 65536
     assert source == 'object'
 
 
-def test_cloud_fallback_does_not_choose_smaller_hevc_or_origin_first(monkeypatch):
-    server = _load_server(monkeypatch)
+def test_cloud_fallback_does_not_choose_smaller_hevc_or_origin_first():
     detail = {
         'feedInfo': {
             'originVideoUrl': 'https://finder.video.qq.com/origin-small.mp4',
@@ -48,7 +39,7 @@ def test_cloud_fallback_does_not_choose_smaller_hevc_or_origin_first(monkeypatch
         },
     }
 
-    url, decode_key, encrypted_bytes, source = server._cloud_best_wechat_video(detail)
+    url, decode_key, encrypted_bytes, source = wechat_cloud.best_video(detail)
     assert url == 'https://finder.video.qq.com/h264-known-good.mp4'
     assert decode_key == ''
     assert encrypted_bytes == 0
