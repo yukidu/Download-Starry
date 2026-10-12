@@ -384,8 +384,11 @@ def video_info():
         return jsonify(error="請輸入有效的 YouTube、Instagram、Facebook 或微信視頻號分享網址"), 400
 
     try:
-        with YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
-            info = wechat.resolve(url) if platform == "WeChat" else ydl.extract_info(url, download=False)
+        if platform == "WeChat":
+            info = wechat.resolve(url)
+        else:
+            with YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
+                info = ydl.extract_info(url, download=False)
     except wechat.WeChatError as exc:
         return jsonify(error=str(exc)), 422
     except DownloadError as exc:
