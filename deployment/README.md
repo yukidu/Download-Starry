@@ -82,3 +82,5 @@ pnpm exec wrangler deploy --dry-run --containers-rollout=none
 管理員將元寶登入 Cookie 設為 Cloudflare Worker Secret `YUANBAO_COOKIE`，Worker 傳入自己的容器。憑證只送給騰訊元寶官方解析 API，不送給媒體 CDN，也不放入 GitHub、映像檔或前端。登入失效時需管理員重新登入更新 Secret；容器休眠後重啟會載入新值。
 
 2026-10-12 本機實測使用者提供的 `AAes3OFGNS` 分享連結，透過騰訊登入解析並下載原始 MP4（14,122,824 bytes）。不同影片仍可能因存取限制而失敗。
+
+正式網站驗證：同一微信連結解析成功，MP4 14,122,824 bytes、MP3 6,777,982 bytes 均下載完成。前端使用原始畫質選項；登入憑證已由管理員授權存入 Cloudflare Secret。

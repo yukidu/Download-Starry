@@ -53,3 +53,17 @@ test('container startup failure returns a retryable error', async () => {
   assert.equal(response.status, 503);
   assert.doesNotMatch(await response.text(), /internal detail/);
 });
+test('transient static resource failures retry without duplicating download POSTs', async () => {
+  let calls = 0;
+  const backend = {...env, DOWNLOADER: {getByName() {return {fetch() {
+    calls++;
+    return calls === 1 ? new Response('starting', {status: 503}) : new Response('/* css */');
+  }};}}};
+  const response = await handleRequest(req('/static/style.css', {headers: {Authorization: authorization}}), backend);
+  assert.equal(response.status, 200);
+  assert.equal(calls, 2);
+  calls = 0;
+  const post = await handleRequest(req('/api/download', {method: 'POST', headers: {Authorization: authorization}, body: 'url=test'}), backend);
+  assert.equal(post.status, 503);
+  assert.equal(calls, 1);
+});

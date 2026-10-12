@@ -69,7 +69,22 @@ export async function handleRequest(request, env) {
   forwarded.headers.set('X-Backend-Token', await digest(`backend:${env.AUTH_PASSWORD}`));
   try {
     // Every job, progress request and file transfer must reach the same instance.
-    const response = await env.DOWNLOADER.getByName('personal-downloader').fetch(forwarded);
+    const container = env.DOWNLOADER.getByName('personal-downloader');
+    const path = new URL(request.url).pathname;
+    // Retry only page resources: never repeat a download-creation POST.
+    const retryable = ['GET', 'HEAD'].includes(request.method) &&
+      (path === '/' || path.startsWith('/static/'));
+    let response;
+    for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
+      try {
+        response = await container.fetch(retryable ? forwarded.clone() : forwarded);
+        if (!retryable || response.status < 500 || attempt === 2) break;
+        await response.body?.cancel();
+      } catch (error) {
+        if (!retryable || attempt === 2) throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+    }
     if (response.status >= 500 && !response.headers.get('Content-Type')?.includes('application/json')) {
       await response.body?.cancel();
       return errorResponse('下載服務正在啟動或暫時無法連線，請稍後重試', 503);
