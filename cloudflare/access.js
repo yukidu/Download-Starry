@@ -77,6 +77,12 @@ export async function handleRequest(request, env) {
     result.headers.set('X-Content-Type-Options', 'nosniff');
     result.headers.set('Referrer-Policy', 'no-referrer');
     result.headers.set('X-Frame-Options', 'DENY');
+    if (path === '/static/service-worker.js') {
+      result.headers.set('Service-Worker-Allowed', '/');
+    }
+    if (path === '/static/manifest.webmanifest') {
+      result.headers.set('Content-Type', 'application/manifest+json; charset=utf-8');
+    }
     return result;
   } catch {
     return errorResponse('下載服務正在啟動或暫時無法連線，請稍後重試', 503);
