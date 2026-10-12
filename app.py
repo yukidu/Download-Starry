@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import time
 import uuid
@@ -274,7 +275,7 @@ def download_worker(
                 "format": "srt",
             }],
         })
-    elif kind == "audio":
+    elif kind == "audio" and platform != "WeChat":
         options.update({
             "format": "bestaudio/best",
             "postprocessors": [{
@@ -284,6 +285,9 @@ def download_worker(
             }],
         })
     elif platform == "WeChat":
+        # WeChat may expose an encrypted full-quality MP4. Download the source
+        # first, decrypt its short encrypted prefix locally, then (for MP3) run
+        # FFmpeg ourselves so extraction never sees the encrypted header.
         options["format"] = "best"
     else:
         height = int(quality)
@@ -297,14 +301,61 @@ def download_worker(
             cancel_event.set()
             raise DownloadCancelled("下載已由使用者停止")
         update_job(job_id, status="downloading", progress=0, message="正在連線至影片平台")
+        wechat_info = None
         with YoutubeDL(options) as ydl:
             if platform == "WeChat":
-                info = ydl.process_ie_result(wechat.resolve(url), download=True)
+                wechat_info = wechat.resolve(url)
+                info = ydl.process_ie_result(wechat_info, download=True)
             else:
                 info = ydl.extract_info(url, download=True)
         if cancellation_requested():
             cancel_event.set()
             raise DownloadCancelled("下載已由使用者停止")
+
+        if platform == "WeChat":
+            source_candidates = [
+                path for path in Path(temp_dir).iterdir()
+                if path.is_file() and path.suffix not in {".part", ".ytdl"}
+            ]
+            if not source_candidates:
+                raise RuntimeError("wechat output file missing")
+            source_file = max(source_candidates, key=lambda path: path.stat().st_size)
+            decode_key = (wechat_info or {}).get("_wechat_decode_key")
+            if decode_key:
+                update_job(
+                    job_id,
+                    status="processing",
+                    progress=97,
+                    speed=None,
+                    eta=None,
+                    message="正在還原微信原畫影片",
+                )
+                wechat.decrypt_file(
+                    source_file,
+                    decode_key,
+                    (wechat_info or {}).get("_wechat_encrypted_bytes"),
+                )
+
+            if kind == "audio":
+                update_job(
+                    job_id,
+                    status="processing",
+                    progress=98,
+                    speed=None,
+                    eta=None,
+                    message="正在使用 FFmpeg 轉換 MP3",
+                )
+                audio_file = source_file.with_suffix(".mp3")
+                completed = subprocess.run([
+                    shutil.which("ffmpeg") or "ffmpeg",
+                    "-hide_banner", "-loglevel", "error", "-y",
+                    "-i", str(source_file), "-vn",
+                    "-codec:a", "libmp3lame", "-b:a", "192k",
+                    str(audio_file),
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
+                if completed.returncode != 0 or not audio_file.exists():
+                    raise DownloadError("WECHAT_AUDIO_CONVERSION_FAILED")
+                source_file.unlink(missing_ok=True)
 
         expected_extension = {"audio": ".mp3", "subtitle": ".srt"}.get(kind, ".mp4")
         candidates = list(Path(temp_dir).glob(f"*{expected_extension}"))
