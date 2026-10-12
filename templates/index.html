@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='compact.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='provider-ui.css') }}">
 </head>
 <body>
   <div class="cosmic-scene" aria-hidden="true">
@@ -78,23 +79,34 @@
   <main>
     <section class="hero" aria-label="支援的平台">
       <div class="platform-icons" aria-label="支援的平台" style="flex-wrap:wrap">
-        <span class="platform-icon platform-youtube" title="YouTube" aria-label="YouTube">
+        <span class="platform-icon platform-youtube" data-provider="youtube" title="YouTube" aria-label="YouTube">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.6.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2 12a29 29 0 0 0 .4 4.8 2.8 2.8 0 0 0 2 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22 12a29 29 0 0 0-.4-4.8Z" fill="currentColor"/><path d="m10 15.3 5-3.3-5-3.3v6.6Z" fill="white"/></svg>
         </span>
-        <span class="platform-icon platform-instagram" title="Instagram" aria-label="Instagram">
+        <span class="platform-icon platform-instagram" data-provider="instagram" title="Instagram" aria-label="Instagram">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17.5" cy="6.6" r="1.25" fill="currentColor"/></svg>
         </span>
-        <span class="platform-icon platform-facebook" title="Facebook" aria-label="Facebook">
+        <span class="platform-icon platform-facebook" data-provider="facebook" title="Facebook" aria-label="Facebook">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5h1.7V3.7c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2H8V13h2.8v8h3.4Z" fill="currentColor"/></svg>
         </span>
-        <span class="platform-icon platform-wechat" title="微信影音號／視頻號" aria-label="微信影音號／視頻號">
+        <span class="platform-icon platform-wechat" data-provider="wechat" title="微信影音號／視頻號" aria-label="微信影音號／視頻號">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.2C4.8 4.2 2 6.5 2 9.3c0 1.6.9 3.1 2.4 4.1l-.7 2.2 2.6-1.2c.6.1 1.3.2 2 .2.5 0 1 0 1.4-.1a5.4 5.4 0 0 1-.5-2.2c0-3.1 2.9-5.5 6.6-5.5h.3c-1.3-1.6-4-2.6-6.8-2.6Z" fill="currentColor" opacity=".85"/><path d="M22 12.4c0-2.4-2.5-4.4-5.7-4.4-3.1 0-5.7 2-5.7 4.4s2.6 4.4 5.7 4.4c.6 0 1.2-.1 1.7-.2l2.3 1.2-.6-2c1.4-.8 2.3-2 2.3-3.4Z" fill="currentColor"/></svg>
         </span>
-        <span class="platform-icon platform-ganjing" title="乾淨世界 Gan Jing World" aria-label="乾淨世界 Gan Jing World" style="color:#18a56f;animation-delay:-3.2s">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 14.5c3.7-.1 6.4-2 8.4-6.2.9 3.7-.4 7.4-3.6 8.9-1.8.9-3.5.3-4.8-2.7Z" fill="currentColor"/><path d="M9.2 15.2c1.7-2.1 3.8-3.8 6.2-5.1" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="platform-icon platform-ganjing" data-provider="ganjingworld" title="乾淨世界 Gan Jing World" aria-label="乾淨世界 Gan Jing World">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="9.7" r="7.2" fill="none" stroke="#2d56a3" stroke-width="1.45"/>
+            <path d="M4.9 9.7h14.2M12 2.5c-2 2-3 4.4-3 7.2s1 5.2 3 7.2M12 2.5c2 2 3 4.4 3 7.2s-1 5.2-3 7.2" fill="none" stroke="#2d56a3" stroke-width="1" stroke-linecap="round"/>
+            <text x="12" y="12.2" text-anchor="middle" fill="#2d56a3" font-size="6.1" font-weight="900">淨</text>
+            <text class="gjw-logo-text" x="12" y="22" text-anchor="middle" fill="#e86f16">GJW</text>
+          </svg>
         </span>
-        <span class="platform-icon platform-odysee" title="Odysee" aria-label="Odysee" style="color:#8b5cf6;animation-delay:-4s">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 8.1 12 3.8l7.5 4.3v7.8L12 20.2l-7.5-4.3V8.1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m10 9 5 3-5 3V9Z" fill="currentColor"/></svg>
+        <span class="platform-icon platform-odysee" data-provider="odysee" title="Odysee" aria-label="Odysee">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <defs><linearGradient id="odysee-logo-gradient" x1="2" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#f52d6d"/><stop offset="1" stop-color="#ff9c40"/></linearGradient></defs>
+            <circle cx="12" cy="12" r="9.5" fill="url(#odysee-logo-gradient)"/>
+            <circle cx="10.5" cy="7.2" r="2.05" fill="white"/>
+            <path d="M10.1 9.2c.9.1 1.7.6 2.2 1.3l1.6 2.2 2.1-1.1c.7-.4 1.4.6.8 1.2l-3.1 2.5-1.9-1.9-.4 3.8 2.2 1.6c.7.5.1 1.6-.7 1.3l-4.1-1.6-.4-4-2 1.7c-.7.6-1.7-.2-1.2-.9l2.6-4.2c.5-1.1 1.3-1.8 2.3-1.9Z" fill="white"/>
+            <circle cx="17.7" cy="6.2" r=".7" fill="white" opacity=".9"/>
+          </svg>
         </span>
       </div>
     </section>
@@ -161,6 +173,7 @@
   {% endif %}
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='provider-ui.js') }}"></script>
   <script src="{{ url_for('static', filename='ui.js') }}"></script>
   {% if not cloud_mode %}
   <script src="{{ url_for('static', filename='integration.js') }}"></script>
