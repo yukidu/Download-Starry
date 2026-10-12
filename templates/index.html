@@ -19,7 +19,7 @@
     <section class="hero">
       <div class="eyebrow">音響組專用 · 簡單、快速</div>
       <h1>SaveVideo<br><span>社群影音下載工具</span></h1>
-      <p>貼上 YouTube、Instagram 或 Facebook 影片連結，選擇影片畫質或轉為 MP3。{{ '處理完成後，直接儲存到你的電腦或手機。' if cloud_mode else '檔案在你的電腦上處理，不經第三方服務。' }}</p>
+      <p>貼上 YouTube、Instagram、Facebook 或微信視頻號 影片連結，選擇影片畫質或轉為 MP3。{{ '處理完成後，直接儲存到你的電腦或手機。' if cloud_mode else '檔案在你的電腦上處理，不經第三方服務。' }}</p>
     </section>
 
     {% if not cloud_mode %}
@@ -32,7 +32,7 @@
     <section class="downloader" aria-label="下載工具">
       <form id="lookup-form" class="url-row">
         <span class="link-icon">↗</span>
-        <input id="url" type="url" required autocomplete="off" placeholder="貼上 YouTube、Instagram 或 Facebook 影片網址…" aria-label="影片網址">
+        <input id="url" type="url" required autocomplete="off" placeholder="貼上 YouTube、Instagram、Facebook 或微信視頻號 影片網址…" aria-label="影片網址">
         <button id="lookup-button" type="submit">解析影片 <span>→</span></button>
       </form>
       <div id="message" class="message" role="alert"></div>

@@ -9,6 +9,7 @@ export class VideoDownloader extends Container {
   async fetch(request) {
     this.envVars = {
       APP_MODE: 'cloud',
+      YUANBAO_COOKIE: this.env.YUANBAO_COOKIE || '',
       CLOUD_BACKEND_TOKEN: await digest(`backend:${this.env.AUTH_PASSWORD}`),
       MAX_ACTIVE_JOBS: '1',
       MAX_DOWNLOAD_BYTES: '536870912',

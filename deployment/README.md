@@ -74,3 +74,11 @@ pnpm exec wrangler deploy --dry-run --containers-rollout=none
 最後一行僅驗證 Worker 打包，不建置 Docker 映像檔。完整容器建置由 GitHub Actions 的 dry-run（不含 rollout=none）完成，或有 Docker 的電腦執行 `docker build .`。
 
 平台可能拒絕雲端主機 IP、要求登入或限制部分影片；通過程式測試不代表所有社群平台影片都能下載。不要將私人 cookies 或帳密提交到 GitHub。手機單部下載使用瀏覽器下載功能，並非直接寫入相簿；播放清單資料夾批次儲存仍須瀏覽器支援 `showDirectoryPicker`。
+
+## 微信視頻號分享連結
+
+支援 `https://weixin.qq.com/sph/...` 普通影片分享連結。以騰訊元寶登入解析，取得原始 MP4 後沿用下載、MP3 轉檔、大小限制與暫存清理；不提供微信字幕或直播擷取。公開分享頁本身通常只有封面與描述。
+
+管理員將元寶登入 Cookie 設為 Cloudflare Worker Secret `YUANBAO_COOKIE`，Worker 傳入自己的容器。憑證只送給騰訊元寶官方解析 API，不送給媒體 CDN，也不放入 GitHub、映像檔或前端。登入失效時需管理員重新登入更新 Secret；容器休眠後重啟會載入新值。
+
+2026-10-12 本機實測使用者提供的 `AAes3OFGNS` 分享連結，透過騰訊登入解析並下載原始 MP4（14,122,824 bytes）。不同影片仍可能因存取限制而失敗。

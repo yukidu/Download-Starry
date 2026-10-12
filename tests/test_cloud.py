@@ -80,3 +80,25 @@ def test_cancel_marks_running_job(client, monkeypatch):
     job_id = response.json['job_id']
     assert client.post(f'/api/download/{job_id}/cancel', headers=HEADERS).status_code == 202
     assert core.download_jobs[job_id]['cancel_event'].is_set()
+
+
+def test_wechat_metadata_and_original_download(client, monkeypatch):
+    monkeypatch.setattr(core.wechat, 'resolve', lambda url: {
+        'id': 'AAes3OFGNS', 'title': '微信測試', 'channel': '作者',
+        'url': 'https://finder.video.qq.com/example.mp4', 'ext': 'mp4',
+    })
+    url = 'https://weixin.qq.com/sph/AAes3OFGNS'
+    metadata = client.post('/api/info', headers=HEADERS, json={'url': url})
+    assert metadata.status_code == 200
+    assert metadata.json['original_quality'] is True
+    assert metadata.json['qualities'] == []
+    assert 'url' not in metadata.json
+    monkeypatch.setattr(core.shutil, 'which', lambda value: '/usr/bin/ffmpeg')
+    monkeypatch.setattr(core.download_executor, 'submit', lambda *args: None)
+    response = client.post('/api/download', headers=HEADERS, data={
+        'url': url, 'type': 'video', 'quality': 'original',
+    })
+    assert response.status_code == 202
+    assert client.post('/api/download', headers=HEADERS, data={
+        'url': url, 'type': 'subtitle', 'subtitle': 'zh',
+    }).status_code == 400

@@ -14,6 +14,7 @@ from threading import Event, Lock
 from urllib.parse import parse_qs, urlparse
 
 from flask import Flask, jsonify, render_template, request, send_file
+import wechat
 try:
     from yt_dlp import YoutubeDL
     from yt_dlp.utils import DownloadCancelled, DownloadError
@@ -75,6 +76,8 @@ SUPPORTED_HOSTS = {
 
 
 def platform_for_url(value: str) -> str | None:
+    if wechat.share_id(value):
+        return "WeChat"
     try:
         parsed = urlparse(value.strip())
         hostname = (parsed.hostname or "").lower().rstrip(".")
@@ -280,6 +283,8 @@ def download_worker(
                 "preferredquality": "192",
             }],
         })
+    elif platform == "WeChat":
+        options["format"] = "best"
     else:
         height = int(quality)
         options.update({
@@ -293,7 +298,10 @@ def download_worker(
             raise DownloadCancelled("下載已由使用者停止")
         update_job(job_id, status="downloading", progress=0, message="正在連線至影片平台")
         with YoutubeDL(options) as ydl:
-            info = ydl.extract_info(url, download=True)
+            if platform == "WeChat":
+                info = ydl.process_ie_result(wechat.resolve(url), download=True)
+            else:
+                info = ydl.extract_info(url, download=True)
         if cancellation_requested():
             cancel_event.set()
             raise DownloadCancelled("下載已由使用者停止")
@@ -336,7 +344,9 @@ def download_worker(
         )
     except Exception as exc:
         error_detail = str(exc)
-        if "CLOUD_SIZE_LIMIT" in error_detail:
+        if isinstance(exc, wechat.WeChatError):
+            error_message = str(exc)
+        elif "CLOUD_SIZE_LIMIT" in error_detail:
             error_message = "影片超過此服務的單次大小限制，請降低畫質或使用本機版"
         elif "RemoteDisconnected" in error_detail or "Connection aborted" in error_detail:
             error_message = "影片平台中斷連線，自動續傳與重試後仍未完成。請稍後再試或降低畫質"
@@ -371,11 +381,13 @@ def video_info():
     url = payload["url"].strip()
     platform = platform_for_url(url)
     if not platform:
-        return jsonify(error="請輸入有效的 YouTube、Instagram 或 Facebook 影片網址"), 400
+        return jsonify(error="請輸入有效的 YouTube、Instagram、Facebook 或微信視頻號分享網址"), 400
 
     try:
         with YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = wechat.resolve(url) if platform == "WeChat" else ydl.extract_info(url, download=False)
+    except wechat.WeChatError as exc:
+        return jsonify(error=str(exc)), 422
     except DownloadError as exc:
         app.logger.warning("Metadata failed: platform=%s detail=%s", platform, exc)
         if platform == "Instagram" and "empty media response" in str(exc).lower():
@@ -431,6 +443,7 @@ def video_info():
         "channel": info.get("channel") or info.get("uploader") or platform,
         "platform": platform,
         "qualities": qualities,
+        "original_quality": platform == "WeChat",
         "subtitles": subtitle_tracks(info),
         "playlist": playlist,
     })
@@ -448,7 +461,9 @@ def download():
     platform = platform_for_url(url)
     if not platform or kind not in {"video", "audio", "subtitle"}:
         return jsonify(error="下載參數無效"), 400
-    if kind == "video" and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
+    if platform == "WeChat" and kind == "subtitle":
+        return jsonify(error="微信視頻號未提供可下載字幕"), 400
+    if kind == "video" and not (platform == "WeChat" and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
         return jsonify(error="畫質選項無效"), 400
     if kind == "subtitle" and not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", subtitle_language):
         return jsonify(error="字幕語言選項無效"), 400

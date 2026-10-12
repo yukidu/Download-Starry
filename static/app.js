@@ -116,7 +116,9 @@ lookupForm.addEventListener('submit', async event => {
 
     const select = document.querySelector('#quality');
     select.innerHTML = '';
-    (data.qualities.length ? data.qualities : [720]).forEach((height, index) => {
+    if (data.original_quality) {
+      select.add(new Option('原始畫質', 'original'));
+    } else (data.qualities.length ? data.qualities : [720]).forEach((height, index) => {
       select.add(new Option(`${height}p${index === 0 ? ' · 最佳畫質' : ''}`, height));
     });
 
