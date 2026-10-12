@@ -29,7 +29,79 @@ def test_cloud_prefers_object_desc_media_over_preview_variants():
     assert source == 'object'
 
 
-def test_cloud_ultra_hd_strips_transcode_limits_but_keeps_auth():
+def test_cloud_requests_highest_resolution_spec_instead_of_existing_low_flag():
+    detail = {
+        'object': {
+            'objectDesc': {
+                'media': [{
+                    'mediaType': 4,
+                    'url': (
+                        'http://wxapp.tc.qq.com/251/20304/stodownload'
+                        '?encfilekey=enc-value&bizid=1023&dotrans=0'
+                        '&X-snsvideoflag=xWT112'
+                    ),
+                    'urlToken': '&token=token-value&scene=2',
+                    'decodeKey': '789',
+                    'spec': [
+                        {
+                            'fileFormat': 'xWT111',
+                            'width': 720,
+                            'height': 1280,
+                            'durationMs': 70000,
+                        },
+                        {
+                            'fileFormat': 'xWT112',
+                            'width': 576,
+                            'height': 1024,
+                            'durationMs': 70000,
+                        },
+                        {
+                            'fileFormat': 'xWT156',
+                            'width': 720,
+                            'height': 1280,
+                            'durationMs': 70000,
+                        },
+                    ],
+                }],
+            },
+        },
+    }
+
+    url, decode_key, encrypted_bytes, source = wechat_cloud.best_video(detail)
+    assert 'encfilekey=enc-value' in url
+    assert 'token=token-value' in url
+    assert 'bizid=1023' in url
+    assert 'dotrans=0' in url
+    assert 'scene=2' in url
+    assert url.count('X-snsvideoflag=') == 1
+    assert 'X-snsvideoflag=xWT111' in url
+    assert 'X-snsvideoflag=xWT112' not in url
+    assert decode_key == '789'
+    assert encrypted_bytes > 0
+    assert source == 'object-spec'
+
+
+def test_cloud_highest_spec_uses_first_server_spec_when_dimensions_tie():
+    item = {
+        'spec': [
+            {'fileFormat': 'xWT111', 'width': 720, 'height': 1280},
+            {'fileFormat': 'xWT156', 'width': 720, 'height': 1280},
+        ],
+    }
+    assert wechat_cloud._highest_spec(item)['file_format'] == 'xWT111'
+
+
+def test_cloud_highest_spec_falls_back_to_first_format_when_dimensions_missing():
+    item = {
+        'spec': [
+            {'fileFormat': 'xWT-A'},
+            {'fileFormat': 'xWT-B'},
+        ],
+    }
+    assert wechat_cloud._highest_spec(item)['file_format'] == 'xWT-A'
+
+
+def test_cloud_ultra_hd_strips_transcode_limits_but_keeps_auth_without_specs():
     detail = {
         'object': {
             'objectDesc': {
