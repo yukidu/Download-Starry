@@ -17,6 +17,7 @@ COPY requirements.txt ./
 COPY deployment/requirements.txt deployment/requirements.txt
 RUN pip install --no-cache-dir -r deployment/requirements.txt
 COPY app.py wechat.py wechat_cloud.py VERSION ./
+COPY yt_dlp_plugins/ yt_dlp_plugins/
 COPY deployment/server.py deployment/__init__.py deployment/
 COPY templates/ templates/
 COPY static/ static/
