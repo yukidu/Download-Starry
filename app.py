@@ -73,6 +73,16 @@ SUPPORTED_HOSTS = {
     "YouTube": ("youtube.com", "youtu.be"),
     "Instagram": ("instagram.com",),
     "Facebook": ("facebook.com", "fb.watch"),
+    "TikTok": ("tiktok.com", "tiktokv.com"),
+    "Threads": ("threads.com", "threads.net"),
+    "X": ("x.com", "twitter.com"),
+    "Dcard": ("dcard.tw",),
+    "小紅書": ("xiaohongshu.com", "xhslink.com"),
+    "Bilibili": ("bilibili.com", "bilibili.tv", "b23.tv"),
+    "Twitch": ("twitch.tv",),
+    "Vimeo": ("vimeo.com",),
+    "Reddit": ("reddit.com", "redd.it", "v.redd.it"),
+    "Pinterest": ("pinterest.com", "pinterest.tw", "pin.it"),
 }
 
 
@@ -284,10 +294,9 @@ def download_worker(
                 "preferredquality": "192",
             }],
         })
-    elif platform == "WeChat":
-        # WeChat may expose an encrypted full-quality MP4. Download the source
-        # first, decrypt its short encrypted prefix locally, then (for MP3) run
-        # FFmpeg ourselves so extraction never sees the encrypted header.
+    elif platform in {"WeChat", "Dcard"}:
+        # WeChat and Dcard both expose a preferred original/public source.
+        # WeChat may additionally need its encrypted prefix restored below.
         options["format"] = "best"
     else:
         height = int(quality)
@@ -432,7 +441,7 @@ def video_info():
     url = payload["url"].strip()
     platform = platform_for_url(url)
     if not platform:
-        return jsonify(error="請輸入有效的 YouTube、Instagram、Facebook 或微信視頻號分享網址"), 400
+        return jsonify(error="請輸入支援平台的公開影音分享網址"), 400
 
     try:
         if platform == "WeChat":
@@ -497,7 +506,7 @@ def video_info():
         "channel": info.get("channel") or info.get("uploader") or platform,
         "platform": platform,
         "qualities": qualities,
-        "original_quality": platform == "WeChat",
+        "original_quality": platform in {"WeChat", "Dcard"},
         "subtitles": subtitle_tracks(info),
         "playlist": playlist,
     })
@@ -517,7 +526,7 @@ def download():
         return jsonify(error="下載參數無效"), 400
     if platform == "WeChat" and kind == "subtitle":
         return jsonify(error="微信視頻號未提供可下載字幕"), 400
-    if kind == "video" and not (platform == "WeChat" and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
+    if kind == "video" and not (platform in {"WeChat", "Dcard"} and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
         return jsonify(error="畫質選項無效"), 400
     if kind == "subtitle" and not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", subtitle_language):
         return jsonify(error="字幕語言選項無效"), 400
