@@ -16,22 +16,19 @@ SaveVideo 目前不是 React / TypeScript 專案，而是 Flask + 原生 JavaScr
 - Cloudflare Worker / Container、Durable Object、GitHub Actions 可以原樣保留。
 - 正式站已使用自訂網域 `download.starry.phd`，未來 Universal Links / App Links 可沿用同一網站網域。
 
-## B. 此次需要調整的部分
+## B. 原本需要調整、且本輪已處理的部分
 
-- 剪貼簿直接使用 `navigator.clipboard`。
-- 主題設定直接使用 `localStorage`。
-- 單檔下載直接建立 `<a>`。
-- 播放清單直接使用 `showDirectoryPicker`、File System Access API。
-- 離開頁面取消工作直接使用 `navigator.sendBeacon`。
-- API endpoint 分散在 `static/app.js`。
-- 來源頁面另有直接 `window.open`。
-- 專案原本沒有 manifest / service worker，因此尚不是完整 PWA。
+原本下載主流程直接使用 `navigator.clipboard`、`showDirectoryPicker`、File System Access API、`navigator.sendBeacon`、自行建立 `<a>` 下載，且 `/api/...` endpoint 分散在 `static/app.js`。
 
-此次建立：
+本輪已將下載主流程移到：
 
 - `static/platform.js`：runtime、storage、clipboard、files、browser、lifecycle、network、PWA、version 統一入口。
 - `static/api.js`：API endpoint 與下載 API 統一入口。
+- `static/app-core.js`：只呼叫 Platform Service / API client，不自行判斷 Web、Android、iOS。
+- `static/app.js`：只負責 bootstrap，共用核心不再綁死 HTML 載入順序。
 - PWA manifest、Service Worker、離線提示頁與 App 圖示。
+
+專案原本沒有 manifest / service worker，因此本輪補上最低風險 PWA shell。
 
 ## C. 高風險、不應現在動的部分
 
@@ -42,14 +39,15 @@ SaveVideo 目前不是 React / TypeScript 專案，而是 Flask + 原生 JavaScr
 
 這些與「未來 Capacitor-ready」沒有直接必要關係，所以此次不大改。
 
-## D. 仍屬 Web-only 的能力
+## D. 仍屬 Web-only，但已有未來接點的能力
 
 - Web PWA 安裝提示與 Service Worker。
-- Chrome / Edge 的播放清單資料夾選擇與直接串流寫入。
-- 外部來源頁面的瀏覽器開新分頁。
-- Windows 本機專用整合功能。
+- Web 的播放清單資料夾選擇與串流寫入；主流程已改走 `platform.files`，未來可接 Native Filesystem/File Picker。
+- 外部來源頁面目前仍由 `provider-ui.js` 直接使用瀏覽器 `window.open`；`platform.browser.openExternal()` 已存在，之後若 Native App 真正需要再遷移。
+- `ui.js` 的主題偏好仍直接使用少量 `localStorage`；`platform.storage` 已準備好，但這次不為了兩個存取點重寫整個大型視覺腳本。
+- Windows 本機專用 `integration.js` 仍維持 local API / 視窗流程，不納入 Capacitor 核心。
 
-其中一般檔案、瀏覽器與 storage 能力已先有 platform service；真正加入 Capacitor 時只需在 `window.SaveVideoNative` 後面接 Native implementation，不應在各 UI component 到處寫 `if (ios)` / `if (android)`。
+這些保留項目不會阻止未來 App 化，也避免本輪製造不必要的大 diff。
 
 ## E. API / URL / OAuth 寫死盤點
 
@@ -59,11 +57,11 @@ SaveVideo 目前不是 React / TypeScript 專案，而是 Flask + 原生 JavaScr
 - 專案目前沒有會員登入、Google OAuth、Cookie session，因此此次不新增或假裝存在第二套 Auth。
 - 若未來接中央會員中心，Web / PWA / Android / iOS 應共用同一會員 ID 與後端 API；Native OAuth callback / deep link 再由平台層接入。
 
-## F. 可以抽象化但現在不急著改的部分
+## F. 可以抽象化但現在不急著加入的能力
 
-- `provider-ui.js` 的來源頁面 `window.open` 可下一輪改接 `platform.browser.openExternal()`。
-- Windows 本機 `integration.js` 有自己的 local API 與視窗流程；它不是雲端 Capacitor 核心，不應為了目錄漂亮而重構。
-- 通知、相機、生物辨識、Push、Native Share 目前產品沒有使用，因此只保留未來擴充原則，不安裝任何 Capacitor Plugin / Firebase / APNs。
+- 通知、相機、生物辨識、Push、Native Share 目前產品沒有使用，因此不為未來假需求安裝 Capacitor Plugin / Firebase / APNs。
+- `platform.js` 已保留 `window.SaveVideoNative` adapter 邊界；真正需要某個 Native 能力時才實作對應 adapter。
+- 版本服務目前提供 Web / Native / build number 的統一讀取介面；目前 Web build 尚未在 CI 注入 commit SHA / build date，因此不偽造這兩個欄位。
 
 ## PWA 快取安全原則
 
