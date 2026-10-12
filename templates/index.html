@@ -18,6 +18,189 @@
     .download-action-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
+
+    /* 網址工具列與上方內容保留呼吸空間。 */
+    .downloader {
+      margin-top: 18px;
+    }
+
+    .url-row {
+      gap: 8px;
+    }
+
+    .url-row .clear-url-button {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--soft-bg) 88%, transparent);
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    .url-row .clear-url-button:hover {
+      border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+      background: color-mix(in srgb, var(--accent) 8%, var(--soft-bg));
+      color: var(--accent);
+      box-shadow: 0 9px 22px rgba(73, 63, 145, .10);
+    }
+
+    .support-cta-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 28px auto 8px;
+      padding: 0 8px 8px;
+    }
+
+    .support-developer-button {
+      position: relative;
+      isolation: isolate;
+      display: inline-flex;
+      min-height: 64px;
+      max-width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      overflow: hidden;
+      padding: 11px 22px;
+      border: 1px solid color-mix(in srgb, #c6a15b 44%, var(--line));
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--card) 94%, #fff7dc 6%), color-mix(in srgb, var(--card) 88%, #ede8ff 12%));
+      color: var(--ink);
+      box-shadow:
+        0 18px 46px rgba(57, 48, 112, .16),
+        inset 0 1px 0 rgba(255, 255, 255, .72);
+      cursor: pointer;
+      font: 800 16px/1.35 "Noto Sans TC", sans-serif;
+      letter-spacing: .015em;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+
+    .support-developer-button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(110deg, transparent 28%, rgba(255,255,255,.54) 45%, transparent 62%);
+      transform: translateX(-125%);
+      animation: supportSheen 5.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .support-developer-button:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, #d3ad62 68%, var(--accent));
+      box-shadow:
+        0 22px 56px rgba(55, 45, 115, .22),
+        0 0 0 3px color-mix(in srgb, #d3ad62 12%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .78);
+    }
+
+    .support-developer-button:active {
+      transform: translateY(0) scale(.985);
+    }
+
+    .support-button-icon {
+      display: inline-grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #c9973e, #efca7b 52%, #8d73ff);
+      color: #fff;
+      box-shadow: 0 9px 22px rgba(120, 87, 39, .22);
+    }
+
+    .support-button-icon svg {
+      width: 23px;
+      height: 23px;
+    }
+
+    .support-button-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .support-button-divider {
+      color: color-mix(in srgb, #c39b4f 72%, var(--muted));
+      font-weight: 600;
+    }
+
+    body.dark-theme .support-developer-button {
+      background:
+        linear-gradient(135deg, rgba(27, 31, 52, .95), rgba(26, 24, 47, .92));
+      border-color: rgba(214, 177, 101, .34);
+      box-shadow:
+        0 20px 54px rgba(0, 0, 0, .42),
+        inset 0 1px 0 rgba(255, 255, 255, .08);
+    }
+
+    @keyframes supportSheen {
+      0%, 66% { transform: translateX(-125%); opacity: 0; }
+      76% { opacity: .9; }
+      100% { transform: translateX(125%); opacity: 0; }
+    }
+
+    @media (max-width: 700px) {
+      .downloader {
+        margin-top: 12px;
+      }
+      .url-row {
+        gap: 7px;
+      }
+      .url-row input {
+        flex: 1 1 100%;
+      }
+      .url-row .paste-url-button,
+      .url-row .clear-url-button,
+      .url-row #lookup-button {
+        min-width: 0;
+        flex: 1 1 0;
+        padding-left: 9px;
+        padding-right: 9px;
+      }
+      .support-cta-wrap {
+        margin-top: 22px;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .support-developer-button {
+        width: 100%;
+        min-height: 62px;
+        padding: 10px 14px;
+        border-radius: 18px;
+        font-size: 15px;
+      }
+      .support-button-icon {
+        width: 39px;
+        height: 39px;
+        flex-basis: 39px;
+        border-radius: 13px;
+      }
+      .support-button-copy {
+        gap: 7px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .url-row button {
+        width: auto;
+        margin-top: 0;
+        flex: 1 1 0;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 14px;
+      }
+      .support-developer-button {
+        gap: 9px;
+        font-size: 14px;
+      }
+      .support-button-copy {
+        gap: 5px;
+      }
+    }
+
     @media (max-width: 560px) {
       .download-action-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -143,6 +326,7 @@
         <span class="link-icon" aria-hidden="true">↗</span>
         <input id="url" type="url" required autocomplete="off" placeholder="貼上影音／照片網址…" aria-label="影音或照片網址">
         <button id="paste-url-button" class="paste-url-button" type="button">貼上網址</button>
+        <button id="clear-url-button" class="clear-url-button" type="button" disabled>清空</button>
         <button id="lookup-button" type="submit">解析網址 <span>→</span></button>
       </form>
       <div id="message" class="message" role="alert"></div>
@@ -178,6 +362,22 @@
           </div>
         </div>
       </div>
+
+      <div class="support-cta-wrap">
+        <button id="support-developer-button" class="support-developer-button" type="button" title="贊助功能預留">
+          <span class="support-button-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M5 8h11v6.2A4.8 4.8 0 0 1 11.2 19H9.8A4.8 4.8 0 0 1 5 14.2V8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M16 10h1.5a2.5 2.5 0 1 1 0 5H16M8 5.5c0-1 1-1.4 1-2.5M12 5.5c0-1 1-1.4 1-2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="support-button-copy">
+            <span>支持無廣告</span>
+            <span class="support-button-divider" aria-hidden="true">|</span>
+            <span>贊助開發者喝杯咖啡</span>
+          </span>
+        </button>
+      </div>
     </section>
   </main>
 
@@ -206,6 +406,7 @@
       const form = document.getElementById('lookup-form');
       const urlInput = document.getElementById('url');
       const pasteButton = document.getElementById('paste-url-button');
+      const clearButton = document.getElementById('clear-url-button');
       const lookupButton = document.getElementById('lookup-button');
       const videoButton = document.getElementById('download-video-button');
       const audioButton = document.getElementById('download-audio-button');
@@ -217,8 +418,26 @@
         else lookupButton.click();
       };
 
+      const syncClearButton = () => {
+        if (!clearButton || !urlInput) return;
+        clearButton.disabled = urlInput.disabled || !urlInput.value.trim();
+      };
+
       urlInput?.addEventListener('paste', () => {
         setTimeout(requestLookup, 0);
+      });
+
+      urlInput?.addEventListener('input', syncClearButton);
+      if (urlInput) {
+        new MutationObserver(syncClearButton).observe(urlInput, {attributes: true, attributeFilter: ['disabled']});
+      }
+      syncClearButton();
+
+      clearButton?.addEventListener('click', () => {
+        if (!urlInput || urlInput.disabled) return;
+        urlInput.value = '';
+        urlInput.dispatchEvent(new Event('input', {bubbles: true}));
+        urlInput.focus();
       });
 
       pasteButton?.addEventListener('click', () => {
