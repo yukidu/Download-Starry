@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="繁星回憶">
+  <defs>
+    <linearGradient id="bg" x1="72" y1="60" x2="440" y2="456" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6d5dfc"/>
+      <stop offset="0.55" stop-color="#493f91"/>
+      <stop offset="1" stop-color="#10294d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="18"/>
+  <path d="M220 177v158c0 20 22 32 39 21l111-78c16-11 16-35 0-46l-111-78c-17-12-39 1-39 23Z" fill="#fff"/>
+  <path d="m133 133 11 31 31 11-31 11-11 31-11-31-31-11 31-11 11-31Zm267 233 8 23 23 8-23 8-8 23-8-23-23-8 23-8 8-23Z" fill="#f8d477"/>
+</svg>
