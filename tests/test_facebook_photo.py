@@ -1,3 +1,4 @@
+import os
 import tempfile
 import time
 import zipfile
@@ -7,6 +8,11 @@ from types import SimpleNamespace
 
 import app as app_module
 import facebook_gallery
+
+
+def _backend_headers():
+    token = os.environ.get('CLOUD_BACKEND_TOKEN')
+    return {'X-Backend-Token': token} if token else {}
 
 
 def test_facebook_photo_url_detection_is_bounded():
@@ -67,9 +73,11 @@ def test_info_api_switches_facebook_photo_to_image_mode(monkeypatch):
         'image_count': 12,
         'image_count_truncated': False,
     })
-    response = app_module.app.test_client().post('/api/info', json={
-        'url': 'https://www.facebook.com/media/set/?set=a.123456&type=3',
-    })
+    response = app_module.app.test_client().post(
+        '/api/info',
+        headers=_backend_headers(),
+        json={'url': 'https://www.facebook.com/media/set/?set=a.123456&type=3'},
+    )
     assert response.status_code == 200
     data = response.get_json()
     assert data['platform'] == 'Facebook'
@@ -82,11 +90,15 @@ def test_info_api_switches_facebook_photo_to_image_mode(monkeypatch):
 
 def test_facebook_photo_download_request_is_allowed(monkeypatch):
     monkeypatch.setattr(app_module.download_executor, 'submit', lambda *args: None)
-    response = app_module.app.test_client().post('/api/download', data={
-        'url': 'https://www.facebook.com/photo/?fbid=123456789',
-        'type': 'image',
-        'quality': 'best',
-    })
+    response = app_module.app.test_client().post(
+        '/api/download',
+        headers=_backend_headers(),
+        data={
+            'url': 'https://www.facebook.com/photo/?fbid=123456789',
+            'type': 'image',
+            'quality': 'best',
+        },
+    )
     assert response.status_code == 202
     job_id = response.get_json()['job_id']
     app_module.remove_job(job_id)
