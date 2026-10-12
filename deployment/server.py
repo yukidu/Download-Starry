@@ -38,6 +38,10 @@ TITLE_CONVERTER = opencc.OpenCC('s2twp')
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
 MULTISPACE = re.compile(r'\s+')
 CJK_CHAR = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]')
+FACEBOOK_ENGAGEMENT_PREFIX = re.compile(
+    r'^\s*(?:(?:\d+(?:[.,]\d+)?\s*[KMB]?\s+(?:views?|reactions?))\s*(?:[·•]\s*)?)+\|\s*',
+    re.IGNORECASE,
+)
 SOURCE_LABELS = {
     'WeChat': '微信',
     'YouTube': 'YouTube',
@@ -64,6 +68,15 @@ TITLE_FIRST_STYLE = """
 }
 #result .media-card .thumb-wrap {
   grid-area: thumb;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  align-self: start;
+}
+#result .media-card .thumb-wrap img {
+  display: block;
+  width: 100%;
+  height: auto !important;
+  object-fit: contain !important;
 }
 #result .media-card .media-meta {
   display: contents;
@@ -94,7 +107,14 @@ TITLE_FIRST_STYLE = """
   }
   #result .media-card .thumb-wrap {
     width: 100%;
+    height: auto !important;
+    aspect-ratio: auto !important;
     margin-bottom: 0;
+  }
+  #result .media-card .thumb-wrap img {
+    width: 100%;
+    height: auto !important;
+    object-fit: contain !important;
   }
   #result .media-card .media-meta h2 {
     font-size: 18px;
@@ -123,6 +143,13 @@ def traditionalize_title(value: str | None) -> str:
     return TITLE_CONVERTER.convert(text)
 
 
+def clean_title(value: str | None, platform: str | None = None) -> str:
+    title = traditionalize_title(value)
+    if platform == 'Facebook':
+        title = FACEBOOK_ENGAGEMENT_PREFIX.sub('', title).strip()
+    return title
+
+
 def source_label(platform: str | None) -> str:
     value = traditionalize_title(platform or '影音')
     value = SOURCE_LABELS.get(platform or '', value)
@@ -131,8 +158,8 @@ def source_label(platform: str | None) -> str:
     return value or '影音'
 
 
-def normalize_title_for_filename(value: str | None) -> str:
-    title = traditionalize_title(value)
+def normalize_title_for_filename(value: str | None, platform: str | None = None) -> str:
+    title = clean_title(value, platform)
     title = INVALID_FILENAME_CHARS.sub('', title)
     title = MULTISPACE.sub(' ', title).strip(' .')
     if not title:
@@ -177,7 +204,7 @@ def build_download_filename(
 
     extension = extension if extension.startswith('.') else f'.{extension}'
     source = source_label(platform)
-    cleaned_title = normalize_title_for_filename(title)
+    cleaned_title = normalize_title_for_filename(title, platform)
     if _is_missing_title(cleaned_title, platform or ''):
         cleaned_title = ''
 
@@ -206,8 +233,8 @@ def build_download_filename(
 
 
 def _remember_metadata(url: str, payload: dict) -> None:
-    title = traditionalize_title(payload.get('title'))
     platform = payload.get('platform') or platform_for_url(url)
+    title = clean_title(payload.get('title'), platform)
     with _metadata_lock:
         _metadata_cache[url] = {'title': title, 'platform': platform}
         if len(_metadata_cache) > 2048:
@@ -313,16 +340,17 @@ def apply_title_and_filename_rules(response):
     if request.path == '/api/info' and response.is_json:
         payload = response.get_json(silent=True)
         if isinstance(payload, dict) and payload.get('title'):
-            payload['title'] = traditionalize_title(payload.get('title'))
+            request_payload = request.get_json(silent=True) or {}
+            url = str(request_payload.get('url') or '').strip()
+            platform = payload.get('platform') or platform_for_url(url)
+            payload['title'] = clean_title(payload.get('title'), platform)
             playlist = payload.get('playlist')
             if isinstance(playlist, dict):
                 if playlist.get('title'):
-                    playlist['title'] = traditionalize_title(playlist.get('title'))
+                    playlist['title'] = clean_title(playlist.get('title'), platform)
                 for entry in playlist.get('entries') or []:
                     if isinstance(entry, dict) and entry.get('title'):
-                        entry['title'] = traditionalize_title(entry.get('title'))
-            request_payload = request.get_json(silent=True) or {}
-            url = str(request_payload.get('url') or '').strip()
+                        entry['title'] = clean_title(entry.get('title'), platform)
             if url:
                 _remember_metadata(url, payload)
             return _rewrite_json_response(response, payload)
