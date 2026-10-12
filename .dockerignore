@@ -1,6 +1,7 @@
 *
 !app.py
 !wechat.py
+!wechat_cloud.py
 !VERSION
 !requirements.txt
 !deployment/
