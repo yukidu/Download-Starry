@@ -1,0 +1,131 @@
+/* 網址服務商辨識：只補平台 Logo 高亮與來源卡片互動，不影響下載核心。 */
+.platform-icon[data-provider] {
+  isolation: isolate;
+  overflow: visible;
+  transition: transform .2s ease, opacity .2s ease, filter .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.platform-icon[data-provider]::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border: 2px solid transparent;
+  border-radius: 25px;
+  opacity: 0;
+  transform: scale(.86);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.platform-icons.has-detected-provider .platform-icon[data-provider]:not(.is-detected) {
+  opacity: .46;
+  filter: saturate(.55) brightness(.92);
+  transform: scale(.92);
+}
+
+.platform-icon[data-provider].is-detected {
+  z-index: 3;
+  opacity: 1 !important;
+  filter: none !important;
+  animation: providerDetectedPulse 1.35s ease-in-out infinite !important;
+  border: 3px solid currentColor;
+  background: color-mix(in srgb, var(--card) 82%, currentColor 18%);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, currentColor 20%, transparent),
+    0 0 30px color-mix(in srgb, currentColor 55%, transparent),
+    0 18px 40px rgba(30, 41, 77, .22);
+  transform: translateY(-5px) scale(1.16);
+}
+
+.platform-icon[data-provider].is-detected::before {
+  border-color: currentColor;
+  opacity: .72;
+  transform: scale(1);
+  box-shadow: 0 0 26px color-mix(in srgb, currentColor 50%, transparent);
+}
+
+.platform-ganjing {
+  color: #e86f16 !important;
+}
+
+.platform-ganjing .gjw-logo-text {
+  font: 900 7px/1 "DM Sans", sans-serif;
+  letter-spacing: -.04em;
+}
+
+.platform-odysee {
+  color: #f04b73 !important;
+}
+
+.media-card.media-source-link {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.media-card.media-source-link::after {
+  content: "↗ 來源";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(38, 45, 90, .12);
+  font: 800 12px/1 "Noto Sans TC", sans-serif;
+  pointer-events: none;
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.media-card.media-source-link:hover,
+.media-card.media-source-link:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  box-shadow: 0 18px 42px rgba(58, 64, 130, .18);
+}
+
+.media-card.media-source-link:focus-visible {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 18px 42px rgba(58, 64, 130, .18);
+}
+
+@keyframes providerDetectedPulse {
+  0%, 100% {
+    transform: translateY(-5px) scale(1.13);
+    box-shadow:
+      0 0 0 5px color-mix(in srgb, currentColor 18%, transparent),
+      0 0 24px color-mix(in srgb, currentColor 42%, transparent),
+      0 18px 40px rgba(30, 41, 77, .19);
+  }
+  50% {
+    transform: translateY(-7px) scale(1.2);
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, currentColor 22%, transparent),
+      0 0 42px color-mix(in srgb, currentColor 62%, transparent),
+      0 21px 46px rgba(30, 41, 77, .25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-icon[data-provider].is-detected {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .platform-icons.has-detected-provider .platform-icon[data-provider]:not(.is-detected) {
+    opacity: .55;
+    transform: scale(.94);
+  }
+
+  .platform-icon[data-provider].is-detected {
+    transform: translateY(-3px) scale(1.12);
+  }
+}
