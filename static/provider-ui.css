@@ -47,6 +47,21 @@
   overflow: visible;
 }
 
+/* 解析成功後：下載區先顯示在網址下方，預覽卡片移到最下方、平台 Logo 上方。 */
+.result:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+}
+
+.result:not([hidden]) #download-form {
+  order: 1;
+}
+
+.result:not([hidden]) .media-card {
+  order: 2;
+  margin-top: 18px;
+}
+
 .media-card.media-source-link {
   position: relative;
   cursor: pointer;
