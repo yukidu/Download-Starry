@@ -61,7 +61,49 @@
     else closeMenu();
   };
 
+  const addPlatformIcons = () => {
+    const container = document.querySelector('.platform-icons');
+    if (!container || container.dataset.expanded === 'true') return;
+    container.dataset.expanded = 'true';
+    container.setAttribute('aria-label', '支援 YouTube、Instagram、Facebook、微信影音號、TikTok、Threads、X、Dcard、小紅書、Bilibili、Twitch、Vimeo、Reddit、Pinterest');
+    container.style.flexWrap = 'wrap';
+    container.style.rowGap = '10px';
+
+    const platforms = [
+      ['TikTok', '♪', '#25f4ee'],
+      ['Threads', '@', 'var(--ink)'],
+      ['X', '𝕏', 'var(--ink)'],
+      ['Dcard', 'D', '#3397cf'],
+      ['小紅書', 'RED', '#ff2442'],
+      ['Bilibili', 'B', '#00aeec'],
+      ['Twitch', '▰', '#9146ff'],
+      ['Vimeo', 'V', '#1ab7ea'],
+      ['Reddit', 'r/', '#ff4500'],
+      ['Pinterest', 'P', '#e60023'],
+    ];
+
+    platforms.forEach(([name, glyph, color], index) => {
+      const item = document.createElement('span');
+      item.className = `platform-icon platform-extra platform-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      item.title = name;
+      item.setAttribute('aria-label', name);
+      item.style.color = color;
+      item.style.animationDelay = `${-(index + 4) * 0.38}s`;
+
+      const mark = document.createElement('span');
+      mark.textContent = glyph;
+      mark.setAttribute('aria-hidden', 'true');
+      mark.style.fontFamily = 'DM Sans, Noto Sans TC, sans-serif';
+      mark.style.fontWeight = '900';
+      mark.style.fontSize = glyph.length > 2 ? '12px' : '20px';
+      mark.style.letterSpacing = glyph.length > 2 ? '-0.04em' : '0';
+      item.appendChild(mark);
+      container.appendChild(item);
+    });
+  };
+
   setTheme(readTheme());
+  addPlatformIcons();
 
   menuToggle?.addEventListener('click', event => {
     event.stopPropagation();
