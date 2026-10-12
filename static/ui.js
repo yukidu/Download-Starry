@@ -8,6 +8,9 @@
   const menuThemeToggle = document.getElementById('menu-theme-toggle');
   const menuThemeLabel = document.getElementById('menu-theme-label');
   const urlInput = document.getElementById('url');
+  const lookupForm = document.getElementById('lookup-form');
+  const message = document.getElementById('message');
+  const hero = document.querySelector('.hero');
 
   const readTheme = () => {
     try {
@@ -61,6 +64,110 @@
     else closeMenu();
   };
 
+  const installPlatformStyles = () => {
+    if (document.getElementById('platform-interaction-style')) return;
+    const style = document.createElement('style');
+    style.id = 'platform-interaction-style';
+    style.textContent = `
+      .downloader > .hero {
+        max-width: none;
+        margin: 14px auto 8px;
+        padding: 0;
+      }
+      .downloader > .hero .platform-icons {
+        margin-top: 0;
+      }
+      .platform-icon {
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .platform-icon:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--accent) 56%, transparent);
+        outline-offset: 3px;
+      }
+      .platform-icon.platform-active {
+        transform: translateY(-5px) scale(1.08);
+        box-shadow: 0 18px 38px rgba(62,69,140,.26), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+      }
+      .platform-name-bubble {
+        width: fit-content;
+        max-width: calc(100% - 24px);
+        margin: 9px auto 0;
+        padding: 7px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--ink);
+        box-shadow: 0 8px 22px rgba(35,42,82,.13);
+        font: 800 15px/1.2 "Noto Sans TC", sans-serif;
+        text-align: center;
+        animation: platformNameReveal .16s ease-out both;
+      }
+      .platform-name-bubble[hidden] { display: none !important; }
+      @keyframes platformNameReveal {
+        from { opacity: 0; transform: translateY(-4px) scale(.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @media (max-width: 700px) {
+        .downloader > .hero { margin-top: 10px; }
+        .platform-name-bubble { font-size: 14px; }
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  const movePlatformsBelowUrl = () => {
+    if (!hero || !lookupForm) return;
+    if (message && message.parentElement === lookupForm.parentElement) {
+      message.insertAdjacentElement('afterend', hero);
+    } else {
+      lookupForm.insertAdjacentElement('afterend', hero);
+    }
+  };
+
+  let platformLabelTimer = 0;
+  const showPlatformName = item => {
+    const container = item.closest('.platform-icons');
+    if (!container) return;
+    let bubble = container.parentElement?.querySelector('.platform-name-bubble');
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.className = 'platform-name-bubble';
+      bubble.setAttribute('role', 'status');
+      bubble.setAttribute('aria-live', 'polite');
+      bubble.hidden = true;
+      container.insertAdjacentElement('afterend', bubble);
+    }
+
+    const name = item.getAttribute('aria-label') || item.title || '影音平台';
+    document.querySelectorAll('.platform-icon.platform-active').forEach(icon => icon.classList.remove('platform-active'));
+    item.classList.add('platform-active');
+    bubble.textContent = name;
+    bubble.hidden = false;
+
+    window.clearTimeout(platformLabelTimer);
+    platformLabelTimer = window.setTimeout(() => {
+      bubble.hidden = true;
+      item.classList.remove('platform-active');
+    }, 2200);
+  };
+
+  const wirePlatformIcons = () => {
+    document.querySelectorAll('.platform-icon').forEach(item => {
+      if (item.dataset.nameClickBound === 'true') return;
+      item.dataset.nameClickBound = 'true';
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.addEventListener('click', () => showPlatformName(item));
+      item.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        showPlatformName(item);
+      });
+    });
+  };
+
   const addPlatformIcons = () => {
     const container = document.querySelector('.platform-icons');
     if (!container || container.dataset.expanded === 'true') return;
@@ -103,7 +210,10 @@
   };
 
   setTheme(readTheme());
+  installPlatformStyles();
+  movePlatformsBelowUrl();
   addPlatformIcons();
+  wirePlatformIcons();
 
   menuToggle?.addEventListener('click', event => {
     event.stopPropagation();
