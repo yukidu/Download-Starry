@@ -84,6 +84,8 @@ SUPPORTED_HOSTS = {
     "Vimeo": ("vimeo.com",),
     "Reddit": ("reddit.com", "redd.it", "v.redd.it"),
     "Pinterest": ("pinterest.com", "pinterest.tw", "pin.it"),
+    "乾淨世界": ("ganjingworld.com", "ganjing.com", "gjw.us"),
+    "Odysee": ("odysee.com",),
 }
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
@@ -348,8 +350,8 @@ def download_worker(
                 "preferredquality": "192",
             }],
         })
-    elif platform in {"WeChat", "Dcard"}:
-        # WeChat and Dcard both expose a preferred original/public source.
+    elif platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"}:
+        # These platforms expose or resolve a preferred original/public source.
         # WeChat may additionally need its encrypted prefix restored below.
         options["format"] = "best"
     else:
@@ -616,7 +618,7 @@ def video_info():
         "media_type": "image" if image_mode else "video",
         "image_count": len(photo_entries) if image_mode else 0,
         "qualities": qualities,
-        "original_quality": (not image_mode) and platform in {"WeChat", "Dcard"},
+        "original_quality": (not image_mode) and platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"},
         "subtitles": [] if image_mode else subtitle_tracks(info),
         "playlist": None if image_mode else playlist,
     })
@@ -638,7 +640,7 @@ def download():
         return jsonify(error="目前照片下載僅支援 Instagram 公開貼文"), 400
     if platform == "WeChat" and kind == "subtitle":
         return jsonify(error="微信視頻號未提供可下載字幕"), 400
-    if kind == "video" and not (platform in {"WeChat", "Dcard"} and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
+    if kind == "video" and not (platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"} and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
         return jsonify(error="畫質選項無效"), 400
     if kind == "subtitle" and not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", subtitle_language):
         return jsonify(error="字幕語言選項無效"), 400
