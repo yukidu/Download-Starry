@@ -1,7 +1,6 @@
 'use strict';
 (() => {
   if (window.SaveVideoPlatform) return;
-
   const native = () => window.SaveVideoNative || null;
   const capacitor = window.Capacitor || null;
   let platform = 'web';
@@ -9,29 +8,17 @@
     try { platform = capacitor.getPlatform?.() || capacitor.platform || 'web'; }
     catch (_) { platform = capacitor.platform || 'web'; }
   }
-
   let isCapacitor = platform !== 'web';
-  try {
-    if (capacitor?.isNativePlatform) isCapacitor = Boolean(capacitor.isNativePlatform());
-  } catch (_) {}
-
-  const isStandalone = Boolean(
-    window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true
-  );
+  try { if (capacitor?.isNativePlatform) isCapacitor = Boolean(capacitor.isNativePlatform()); } catch (_) {}
+  const isStandalone = Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true);
   const runtime = Object.freeze({
-    platform,
-    isCapacitor,
-    isWeb: !isCapacitor,
-    isAndroid: platform === 'android',
-    isIOS: platform === 'ios',
-    isStandalone,
-    isPWA: !isCapacitor && isStandalone,
+    platform, isCapacitor, isWeb: !isCapacitor,
+    isAndroid: platform === 'android', isIOS: platform === 'ios',
+    isStandalone, isPWA: !isCapacitor && isStandalone,
   });
 
   const clipboard = Object.freeze({
-    get canReadText() {
-      return Boolean(native()?.clipboard?.readText || navigator.clipboard?.readText);
-    },
+    get canReadText() { return Boolean(native()?.clipboard?.readText || navigator.clipboard?.readText); },
     async readText() {
       const adapter = native()?.clipboard;
       if (adapter?.readText) return String(await adapter.readText());
@@ -41,9 +28,7 @@
   });
 
   const files = Object.freeze({
-    get canPickDirectory() {
-      return Boolean(native()?.files?.pickDirectory || window.showDirectoryPicker);
-    },
+    get canPickDirectory() { return Boolean(native()?.files?.pickDirectory || window.showDirectoryPicker); },
     async pickDirectory(options = {mode: 'readwrite'}) {
       const adapter = native()?.files;
       if (adapter?.pickDirectory) return adapter.pickDirectory(options);
@@ -52,18 +37,13 @@
     },
     async saveResponseToDirectory(response, directoryHandle, filename, {signal} = {}) {
       const adapter = native()?.files;
-      if (adapter?.saveResponseToDirectory) {
-        return adapter.saveResponseToDirectory(response, directoryHandle, filename, {signal});
-      }
+      if (adapter?.saveResponseToDirectory) return adapter.saveResponseToDirectory(response, directoryHandle, filename, {signal});
       if (!directoryHandle?.getFileHandle) throw new Error('目前環境不支援寫入指定資料夾');
-      const fileHandle = await directoryHandle.getFileHandle(filename, {create: true});
-      const writable = await fileHandle.createWritable();
+      const handle = await directoryHandle.getFileHandle(filename, {create: true});
+      const writable = await handle.createWritable();
       try {
         if (response.body) await response.body.pipeTo(writable, {signal});
-        else {
-          await writable.write(await response.blob());
-          await writable.close();
-        }
+        else { await writable.write(await response.blob()); await writable.close(); }
       } catch (error) {
         await writable.abort?.().catch(() => {});
         throw error;
@@ -107,6 +87,5 @@
       });
     },
   });
-
   window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, lifecycle, pwa});
 })();
