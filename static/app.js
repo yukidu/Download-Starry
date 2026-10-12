@@ -1,20 +1,7 @@
 'use strict';
 (() => {
   const head = document.head;
-  const manifest = document.createElement('link');
-  manifest.rel = 'manifest';
-  manifest.href = '/static/manifest.webmanifest';
-  head.appendChild(manifest);
-  for (const [name, content] of [
-    ['theme-color', '#0b1026'],
-    ['apple-mobile-web-app-capable', 'yes'],
-    ['apple-mobile-web-app-status-bar-style', 'black-translucent'],
-  ]) {
-    const meta = document.createElement('meta');
-    meta.name = name;
-    meta.content = content;
-    head.appendChild(meta);
-  }
+  head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0b1026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
 
   const sources = ['/static/platform.js', '/static/api.js', '/static/app-core.js'];
   sources.forEach(href => {
