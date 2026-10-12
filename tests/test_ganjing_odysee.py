@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import app as core
@@ -29,11 +30,13 @@ class FakeYDL:
 def test_ganjing_and_odysee_use_original_quality(monkeypatch):
     monkeypatch.setattr(core, 'YoutubeDL', FakeYDL)
     client = core.app.test_client()
+    backend_token = os.environ.get('CLOUD_BACKEND_TOKEN')
+    headers = {'X-Backend-Token': backend_token} if backend_token else {}
     for url, platform in (
         ('https://www.ganjingworld.com/video/1f7srq4ett0373aCVOuRtTA1h1i61c', '乾淨世界'),
         ('https://odysee.com/@demo:1/video:2', 'Odysee'),
     ):
-        response = client.post('/api/info', json={'url': url})
+        response = client.post('/api/info', headers=headers, json={'url': url})
         assert response.status_code == 200
         assert response.get_json()['platform'] == platform
         assert response.get_json()['original_quality'] is True
