@@ -37,11 +37,7 @@ def _parsed_url(value: str):
 
 
 def looks_like_photo_or_album_url(value: str) -> bool:
-    """Only match URL shapes that are intended to address a photo/post/album.
-
-    This keeps a malicious/manual image-download request from turning a Facebook
-    profile URL into an unbounded profile scrape.
-    """
+    """Match URL shapes that explicitly address a Facebook photo/post/album."""
     parsed = _parsed_url(value)
     if parsed is None or (parsed.hostname or "").lower().endswith("fb.watch"):
         return False
@@ -58,6 +54,11 @@ def looks_like_photo_or_album_url(value: str) -> bool:
 
 
 def may_contain_photos_url(value: str) -> bool:
+    """Allow explicit photo URLs and Facebook's public share-post URLs only.
+
+    Profiles are intentionally excluded so image mode cannot become an
+    unbounded profile scraper.
+    """
     parsed = _parsed_url(value)
     if parsed is None or (parsed.hostname or "").lower().endswith("fb.watch"):
         return False
@@ -178,7 +179,7 @@ def download(
     progress,
     max_bytes: int = 0,
 ) -> dict:
-    if not looks_like_photo_or_album_url(value):
+    if not may_contain_photos_url(value):
         raise FacebookGalleryError("FACEBOOK_PHOTO_URL_INVALID")
 
     root = Path(destination)
