@@ -9,9 +9,7 @@ test('loaded platform layer keeps only current web/native boundaries', async () 
   for (const capability of [
     'isWeb', 'isPWA', 'isCapacitor', 'isAndroid', 'isIOS', 'isStandalone',
     'clipboard', 'files', 'lifecycle', 'pwa',
-  ]) {
-    assert.match(source, new RegExp(capability));
-  }
+  ]) assert.match(source, new RegExp(capability));
   assert.match(source, /SaveVideoNative/);
   assert.doesNotMatch(source, /@capacitor\//);
   assert.doesNotMatch(source, /beforeinstallprompt/);
@@ -47,7 +45,7 @@ test('API endpoints are centralized and default to same-origin', async () => {
   assert.doesNotMatch(source, /download\.starry\.phd/);
 });
 
-test('PWA manifest remains web-first and standalone capable', async () => {
+test('PWA manifest and iOS web-app metadata remain available', async () => {
   const manifest = JSON.parse(await text('static/manifest.webmanifest'));
   const bootstrap = await text('static/app.js');
   assert.equal(manifest.start_url, '/');
@@ -55,6 +53,9 @@ test('PWA manifest remains web-first and standalone capable', async () => {
   assert.equal(manifest.display, 'standalone');
   assert.ok(Array.isArray(manifest.icons) && manifest.icons.length >= 1);
   assert.match(bootstrap, /\/static\/manifest\.webmanifest/);
+  assert.match(bootstrap, /theme-color/);
+  assert.match(bootstrap, /apple-mobile-web-app-capable/);
+  assert.match(bootstrap, /apple-mobile-web-app-status-bar-style/);
 });
 
 test('service worker keeps API and static assets out of runtime cache interception', async () => {
