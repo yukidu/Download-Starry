@@ -1,3 +1,12 @@
+'use strict';
+
+const platform = window.SaveVideoPlatform;
+const api = window.SaveVideoAPI;
+
+if (!platform || !api) {
+  throw new Error('SaveVideo platform/API bootstrap missing');
+}
+
 const lookupForm = document.querySelector('#lookup-form');
 const urlInput = document.querySelector('#url');
 const result = document.querySelector('#result');
@@ -169,13 +178,13 @@ urlInput.addEventListener('input', () => {
 
 pasteUrlButton.addEventListener('click', async () => {
   clearError();
-  if (!navigator.clipboard?.readText) {
+  if (!platform.clipboard.canReadText) {
     showError('目前瀏覽器無法直接讀取剪貼簿，請手動貼到網址欄位');
     urlInput.focus();
     return;
   }
   try {
-    const value = (await navigator.clipboard.readText()).trim();
+    const value = (await platform.clipboard.readText()).trim();
     if (!value) throw new Error('剪貼簿裡沒有網址');
     urlInput.value = value;
     urlInput.dispatchEvent(new Event('input', {bubbles: true}));
@@ -194,13 +203,7 @@ lookupForm.addEventListener('submit', async event => {
   setLookupLoading(true);
 
   try {
-    const response = await fetch('/api/info', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({url}),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '無法解析網址');
+    const data = await api.info(url);
 
     const thumbnail = document.querySelector('#thumbnail');
     thumbnail.hidden = !data.thumbnail;
@@ -273,25 +276,19 @@ const setDownloadControlsDisabled = disabled => {
 };
 
 const runDownloadJob = async ({url, type, quality, subtitle, onProgress = updateProgress}) => {
-  const formData = new FormData();
-  formData.append('url', url);
-  formData.append('type', type);
-  formData.append('quality', quality || 'best');
-  formData.append('subtitle', subtitle || '');
-  const startResponse = await fetch('/api/download', {method: 'POST', body: formData});
-  const startData = await startResponse.json();
-  if (!startResponse.ok) throw new Error(startData.error || '無法開始下載');
-
+  const startData = await api.startDownload({url, type, quality, subtitle});
   const jobId = startData.job_id;
   activeJobId = jobId;
   stopDownloadButton.disabled = false;
+
   while (true) {
     await wait(750);
-    const progressResponse = await fetch(`/api/download/${jobId}/progress`, {cache: 'no-store'});
-    const progressData = await progressResponse.json();
-    if (!progressResponse.ok) {
+    let progressData;
+    try {
+      progressData = await api.progress(jobId);
+    } catch (error) {
       activeJobId = null;
-      throw new Error(progressData.error || '無法取得下載進度');
+      throw error;
     }
     onProgress(progressData);
     if (progressData.status === 'error') {
@@ -315,14 +312,7 @@ const runDownloadJob = async ({url, type, quality, subtitle, onProgress = update
   }
 };
 
-const sendFileToBrowser = job => {
-  const link = document.createElement('a');
-  link.href = `/api/download/${job.jobId}/file`;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-};
+const sendFileToBrowser = job => platform.files.download(api.fileUrl(job.jobId), job.filename);
 
 const completedButtonHtml = type => {
   if (type === 'audio') return '<span>✓</span> MP3 已送出';
@@ -349,7 +339,7 @@ const startSingleDownload = async (button, type) => {
     if (job.cancelled) return;
     completed = true;
     stopDownloadButton.hidden = true;
-    sendFileToBrowser(job);
+    await sendFileToBrowser(job);
     button.innerHTML = completedButtonHtml(type);
   } catch (error) {
     showError(error.message);
@@ -371,26 +361,14 @@ const saveJobToDirectory = async (job, directoryHandle, itemNumber, totalItems) 
   const digits = String(totalItems).length;
   const filename = `${String(itemNumber).padStart(digits, '0')} - ${job.filename}`;
   activeFileTransferController = new AbortController();
-  const response = await fetch(`/api/download/${job.jobId}/file`, {
+  const response = await api.fileResponse(job.jobId, {
     signal: activeFileTransferController.signal,
   });
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || '無法取得已下載的檔案');
-  }
 
-  const fileHandle = await directoryHandle.getFileHandle(filename, {create: true});
-  const writable = await fileHandle.createWritable();
   try {
-    if (response.body) {
-      await response.body.pipeTo(writable, {signal: activeFileTransferController.signal});
-    } else {
-      await writable.write(await response.blob());
-      await writable.close();
-    }
-  } catch (error) {
-    await writable.abort().catch(() => {});
-    throw error;
+    await platform.files.saveResponseToDirectory(response, directoryHandle, filename, {
+      signal: activeFileTransferController.signal,
+    });
   } finally {
     activeFileTransferController = null;
   }
@@ -463,13 +441,13 @@ playlistSingleButton.addEventListener('click', () => playlistDialog.close());
 
 playlistAllButton.addEventListener('click', async () => {
   if (!pendingPlaylist) return;
-  if (!window.showDirectoryPicker) {
+  if (!platform.files.canPickDirectory) {
     playlistDialog.close();
     showError('目前瀏覽器不支援選擇資料夾，請改用最新版 Chrome 或 Edge');
     return;
   }
   try {
-    const directoryHandle = await window.showDirectoryPicker({mode: 'readwrite'});
+    const directoryHandle = await platform.files.pickDirectory({mode: 'readwrite'});
     const playlist = pendingPlaylist;
     playlistDialog.close();
     await startPlaylistBatch(playlist, directoryHandle);
@@ -488,21 +466,18 @@ stopDownloadButton.addEventListener('click', async () => {
   if (!activeJobId) return;
 
   try {
-    const response = await fetch(`/api/download/${activeJobId}/cancel`, {method: 'POST'});
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '無法停止下載');
+    await api.cancel(activeJobId);
   } catch (error) {
     showError(error.message);
   }
 });
 
-window.addEventListener('pagehide', () => {
+platform.lifecycle.onPageHide(() => {
   if (activeBatch) activeBatch.cancelled = true;
   activeFileTransferController?.abort();
   if (!activeJobId) return;
-  const cancelUrl = `/api/download/${activeJobId}/cancel`;
-  const sent = navigator.sendBeacon(cancelUrl, new Blob([], {type: 'application/octet-stream'}));
-  if (!sent) fetch(cancelUrl, {method: 'POST', keepalive: true}).catch(() => {});
+  platform.lifecycle.sendBeacon(api.cancelUrl(activeJobId));
 });
 
 clearParsedResult();
+platform.pwa.registerServiceWorker().catch(() => {});
