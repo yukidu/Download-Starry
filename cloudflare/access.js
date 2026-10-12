@@ -5,13 +5,6 @@ export async function digest(value) {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export async function equalSecret(left, right) {
-  const [a, b] = await Promise.all([digest(left), digest(right)]);
-  let difference = 0;
-  for (let index = 0; index < a.length; index++) difference |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  return difference === 0;
-}
-
 export function errorResponse(message, status, extraHeaders = {}) {
   return Response.json({error: message}, {status, headers: {
     'Cache-Control': 'no-store',
@@ -22,17 +15,7 @@ export function errorResponse(message, status, extraHeaders = {}) {
 
 export async function authorize(request, env) {
   if (!env.AUTH_PASSWORD || env.AUTH_PASSWORD.length < 20) {
-    return errorResponse('管理員尚未完成登入設定', 503);
-  }
-  let credentials = '';
-  try {
-    const header = request.headers.get('Authorization') || '';
-    if (/^Basic /i.test(header)) credentials = atob(header.slice(6));
-  } catch { /* Treat malformed Base64 as unauthenticated. */ }
-  if (!await equalSecret(credentials, `${env.AUTH_USER || 'samuel'}:${env.AUTH_PASSWORD}`)) {
-    return errorResponse('請輸入此工具的使用者名稱與密碼', 401, {
-      'WWW-Authenticate': 'Basic realm="SaveVideo", charset="UTF-8"',
-    });
+    return errorResponse('服務尚未完成安全設定', 503);
   }
   if (!['GET', 'HEAD'].includes(request.method)) {
     const origin = request.headers.get('Origin');
