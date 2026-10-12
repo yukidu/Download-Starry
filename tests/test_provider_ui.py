@@ -56,3 +56,12 @@ def test_detected_provider_uses_single_refined_frame_and_fades_all_others():
     assert 'scale(1.08)' in stylesheet
     assert 'providerDetectedPulse' not in stylesheet
     assert '.media-card.media-source-link' in stylesheet
+
+
+def test_download_controls_render_before_preview_after_lookup():
+    stylesheet = (ROOT / 'static' / 'provider-ui.css').read_text(encoding='utf-8')
+    assert '.result:not([hidden])' in stylesheet
+    assert '.result:not([hidden]) #download-form' in stylesheet
+    assert '.result:not([hidden]) .media-card' in stylesheet
+    assert 'order: 1' in stylesheet
+    assert 'order: 2' in stylesheet
