@@ -6,7 +6,7 @@
 
 - `Dockerfile`：Python 3.12、FFmpeg、Deno、yt-dlp 及 Gunicorn。
 - `cloudflare/worker.js`：單一 Cloudflare Container，閒置 2 分鐘後休眠。
-- `cloudflare/access.js`：瀏覽器登入、跨站操作保護及串流轉送。
+- `cloudflare/access.js`：公開入口、跨站操作保護及串流轉送。
 - `deployment/server.py`：後端驗證、定期清除暫存。
 - `.github/workflows/deploy.yml`：main 推送 → 測試及容器建置 → 部署。
 - 容器限制為 1 台 `basic`（1 GiB 記憶體、1/4 vCPU、4 GB 磁碟）；同時 1 個下載工作。
@@ -44,7 +44,7 @@ Workers Paid 基本費 **US$5/月**。若帳號已有此方案，是否增加基
 
 ## 上線驗證紀錄
 
-2026-10-12（台灣時間）：GitHub Actions 正式部署成功，已設定登入密碼。匿名請求回傳 401；登入後健康檢查回傳 200。實際解析 YouTube 的 Big Buck Bunny，完成 144p MP4 下載至本機（13,626,155 bytes）。此結果僅驗證該公開影片，不代表所有平台或影片皆可下載。
+2026-10-12（台灣時間）：入口已改為公開使用，訪客不需要輸入帳號或密碼。Cloudflare Worker 仍使用內部 Secret 產生後端驗證 token，並保留跨站操作阻擋、固定單一容器、單一下載工作與 512 MiB 來源資料限制。實際解析 YouTube 的 Big Buck Bunny，完成 144p MP4 下載至本機（13,626,155 bytes）。此結果僅驗證該公開影片，不代表所有平台或影片皆可下載。
 
 正式網址：https://savevideo.yukidu.workers.dev
 
@@ -55,8 +55,8 @@ Workers Paid 基本費 **US$5/月**。若帳號已有此方案，是否增加基
 3. 在 GitHub repository secrets 設定 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。Token 應限定此 Cloudflare 帳號並包含 Workers、Durable Objects、Containers 及映像檔部署所需權限。
 4. 先執行測試流程；確認容器能成功建置。
 5. 設定 GitHub repository variable `DEPLOY_ENABLED=true` 後，main 推送或手動 workflow_dispatch 才會部署。
-6. 首次部署後，在 Cloudflare Worker 的 Secrets 中設定 `AUTH_PASSWORD`（至少 20 字元的隨機 ASCII 密碼）。預設使用者名稱為 `samuel`。未設定密碼時入口回傳 503，不允許啟動容器。
-7. 以該帳號密碼開啟部署網址，測試影片解析、MP4、MP3、SRT、取消、續傳及手機下載。
+6. Cloudflare Worker 的 Secret `AUTH_PASSWORD` 仍需保留，至少 20 字元。它現在只作為 Worker 與容器之間的內部驗證材料，**不是訪客登入密碼**；訪客不會看到帳密提示。未設定時入口回傳 503，以避免後端失去內部保護。
+7. 直接開啟部署網址即可測試影片解析、MP4、MP3、SRT、取消、續傳及手機下載，不需登入。
 
 如使用 Workers Builds 原生 Git 整合，請停用上述 GitHub deploy job，避免重複部署。每次部署會更新程式；不會將影片同步到 GitHub。
 
@@ -83,4 +83,4 @@ pnpm exec wrangler deploy --dry-run --containers-rollout=none
 
 2026-10-12 本機實測使用者提供的 `AAes3OFGNS` 分享連結，透過騰訊登入解析並下載原始 MP4（14,122,824 bytes）。不同影片仍可能因存取限制而失敗。
 
-正式網站驗證：同一微信連結解析成功，MP4 14,122,824 bytes、MP3 6,777,982 bytes 均下載完成。前端使用原始畫質選項；登入憑證已由管理員授權存入 Cloudflare Secret。
+正式網站驗證：同一微信連結解析成功，MP4 14,122,824 bytes、MP3 6,777,982 bytes 均下載完成。前端使用原始畫質選項；元寶登入憑證已由管理員授權存入 Cloudflare Secret。
