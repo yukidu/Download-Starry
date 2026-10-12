@@ -100,10 +100,7 @@
       return new Promise(resolve => {
         const register = async () => {
           try { resolve(await navigator.serviceWorker.register(url, {scope: '/'})); }
-          catch (_) {
-            try { resolve(await navigator.serviceWorker.register(url)); }
-            catch (_) { resolve(null); }
-          }
+          catch (_) { resolve(null); }
         };
         if (window.requestIdleCallback) window.requestIdleCallback(register, {timeout: 2000});
         else window.setTimeout(register, 0);
