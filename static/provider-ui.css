@@ -47,6 +47,23 @@
   overflow: visible;
 }
 
+/* 網址列：貼上網址固定在解析網址左側。 */
+.url-row .paste-url-button {
+  margin-right: 7px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  background: var(--soft-bg);
+  color: var(--ink);
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.url-row .paste-url-button:hover {
+  background: color-mix(in srgb, var(--soft-bg) 82%, var(--accent) 18%);
+  color: var(--accent);
+  box-shadow: 0 8px 18px rgba(35,42,82,.12);
+}
+
 /* 解析成功後：下載區先顯示在網址下方，預覽卡片移到最下方、平台 Logo 上方。 */
 .result:not([hidden]) {
   display: flex;
@@ -60,6 +77,60 @@
 .result:not([hidden]) .media-card {
   order: 2;
   margin-top: 18px;
+}
+
+.download-actions {
+  display: grid;
+  gap: 11px;
+  margin-top: 10px;
+}
+
+.download-actions[hidden],
+.subtitle-download-actions[hidden] {
+  display: none !important;
+}
+
+.quality-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 47px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft-bg);
+  color: var(--muted);
+  font: 700 14px/1.35 "Noto Sans TC", sans-serif;
+}
+
+.quality-display strong {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.download-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.download-action-button {
+  width: 100%;
+}
+
+#download-audio-button {
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+}
+
+.subtitle-download-actions {
+  padding-top: 2px;
+}
+
+.subtitle-download-actions label {
+  margin: 0;
+  padding: 0;
 }
 
 .media-card.media-source-link {
@@ -118,5 +189,33 @@
   .platform-odysee .provider-brand-mark-odysee {
     width: 35px;
     height: 35px;
+  }
+
+  .url-row {
+    flex-wrap: wrap;
+  }
+
+  .url-row input {
+    flex: 1 1 calc(100% - 48px);
+  }
+
+  .url-row .paste-url-button,
+  .url-row #lookup-button {
+    flex: 1 1 0;
+    margin-top: 6px;
+  }
+
+  .url-row .paste-url-button {
+    margin-right: 7px;
+  }
+
+  .download-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quality-display {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 }
