@@ -16,7 +16,7 @@
   } catch (_) {}
 
   const isStandalone = Boolean(
-    matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true
+    window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true
   );
   const runtime = Object.freeze({
     platform,
@@ -84,8 +84,8 @@
 
   const lifecycle = Object.freeze({
     onPageHide(handler) {
-      addEventListener('pagehide', handler);
-      return () => removeEventListener('pagehide', handler);
+      window.addEventListener('pagehide', handler);
+      return () => window.removeEventListener('pagehide', handler);
     },
     sendBeacon(url, body = new Blob([], {type: 'application/octet-stream'})) {
       try { if (navigator.sendBeacon?.(url, body)) return true; } catch (_) {}
@@ -105,8 +105,8 @@
             catch (_) { resolve(null); }
           }
         };
-        if (window.requestIdleCallback) requestIdleCallback(register, {timeout: 2000});
-        else setTimeout(register, 0);
+        if (window.requestIdleCallback) window.requestIdleCallback(register, {timeout: 2000});
+        else window.setTimeout(register, 0);
       });
     },
   });
