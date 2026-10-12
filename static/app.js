@@ -1,8 +1,26 @@
 const lookupForm = document.querySelector('#lookup-form');
+const urlInput = document.querySelector('#url');
 const result = document.querySelector('#result');
 const message = document.querySelector('#message');
+const pasteUrlButton = document.querySelector('#paste-url-button');
 const lookupButton = document.querySelector('#lookup-button');
-const downloadButton = document.querySelector('#download-button');
+const downloadVideoButton = document.querySelector('#download-video-button');
+const downloadAudioButton = document.querySelector('#download-audio-button');
+const downloadImageButton = document.querySelector('#download-image-button');
+const downloadSubtitleButton = document.querySelector('#download-subtitle-button');
+const downloadActionButtons = [
+  downloadVideoButton,
+  downloadAudioButton,
+  downloadImageButton,
+  downloadSubtitleButton,
+].filter(Boolean);
+const videoDownloadActions = document.querySelector('#video-download-actions');
+const imageDownloadActions = document.querySelector('#image-download-actions');
+const subtitleDownloadActions = document.querySelector('#subtitle-download-actions');
+const highestQualityLabel = document.querySelector('#highest-quality-label');
+const qualityInput = document.querySelector('#quality');
+const downloadUrl = document.querySelector('#download-url');
+const subtitleSelect = document.querySelector('#subtitle-language');
 const progressPanel = document.querySelector('#download-progress');
 const progressBar = document.querySelector('#progress-bar');
 const progressTrack = document.querySelector('.progress-track');
@@ -12,11 +30,6 @@ const progressSize = document.querySelector('#progress-size');
 const progressSpeed = document.querySelector('#progress-speed');
 const progressEta = document.querySelector('#progress-eta');
 const stopDownloadButton = document.querySelector('#stop-download');
-const videoTab = document.querySelector('#video-tab');
-const audioTab = document.querySelector('#audio-tab');
-const imageTab = document.querySelector('#image-tab');
-const subtitleTab = document.querySelector('#subtitle-tab');
-const subtitleSelect = document.querySelector('#subtitle-language');
 const playlistDialog = document.querySelector('#playlist-dialog');
 const playlistDescription = document.querySelector('#playlist-description');
 const playlistSingleButton = document.querySelector('#playlist-single');
@@ -26,13 +39,17 @@ let activeBatch = null;
 let activeFileTransferController = null;
 let pendingPlaylist = null;
 let currentImageCount = 0;
+let currentImageCountTruncated = false;
 
 const showError = text => {
   message.textContent = text;
   message.classList.add('show');
 };
 
-const clearError = () => message.classList.remove('show');
+const clearError = () => {
+  message.textContent = '';
+  message.classList.remove('show');
+};
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 const formatDuration = seconds => {
@@ -53,6 +70,51 @@ const formatBytes = bytes => {
   const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / (1024 ** unitIndex);
   return `${value.toFixed(unitIndex > 1 ? 1 : 0)} ${units[unitIndex]}`;
+};
+
+const defaultButtonHtml = type => {
+  if (type === 'audio') return '<span>♫</span> 下載 MP3';
+  if (type === 'image') {
+    if (currentImageCount > 1) {
+      const count = `${currentImageCount}${currentImageCountTruncated ? '+' : ''}`;
+      return `<span>↓</span> 打包下載 ${count} 張照片`;
+    }
+    return '<span>↓</span> 下載照片';
+  }
+  if (type === 'subtitle') return '<span>CC</span> 下載 CC 字幕';
+  return '<span>↓</span> 下載 MP4';
+};
+
+const resetActionButtonLabels = () => {
+  downloadVideoButton.innerHTML = defaultButtonHtml('video');
+  downloadAudioButton.innerHTML = defaultButtonHtml('audio');
+  downloadImageButton.innerHTML = defaultButtonHtml('image');
+  downloadSubtitleButton.innerHTML = defaultButtonHtml('subtitle');
+};
+
+const clearParsedResult = ({clearMessage = true} = {}) => {
+  if (playlistDialog?.open) playlistDialog.close();
+  pendingPlaylist = null;
+  currentImageCount = 0;
+  currentImageCountTruncated = false;
+  result.hidden = true;
+  progressPanel.hidden = true;
+  progressPanel.classList.remove('processing');
+  downloadUrl.value = '';
+  qualityInput.value = 'best';
+  highestQualityLabel.textContent = '最高畫質';
+  videoDownloadActions.hidden = false;
+  imageDownloadActions.hidden = true;
+  subtitleDownloadActions.hidden = true;
+  subtitleSelect.innerHTML = '';
+  document.querySelector('#title').textContent = '';
+  document.querySelector('#channel').textContent = '';
+  document.querySelector('#duration').textContent = '';
+  const thumbnail = document.querySelector('#thumbnail');
+  thumbnail.hidden = true;
+  thumbnail.removeAttribute('src');
+  resetActionButtonLabels();
+  if (clearMessage) clearError();
 };
 
 const resetProgress = () => {
@@ -91,15 +153,45 @@ const updateProgress = data => {
   stopDownloadButton.textContent = data.status === 'cancelling' ? '停止中…' : '■ 停止下載';
 };
 
+const setLookupLoading = loading => {
+  lookupButton.disabled = loading;
+  pasteUrlButton.disabled = loading;
+  urlInput.disabled = loading;
+  lookupButton.firstChild.textContent = loading ? '解析中… ' : '解析網址 ';
+  document.body.classList.toggle('loading', loading);
+};
+
+urlInput.addEventListener('input', () => {
+  const previousParsedUrl = downloadUrl.value.trim();
+  if (previousParsedUrl || !result.hidden || !progressPanel.hidden) clearParsedResult();
+  else clearError();
+});
+
+pasteUrlButton.addEventListener('click', async () => {
+  clearError();
+  if (!navigator.clipboard?.readText) {
+    showError('目前瀏覽器無法直接讀取剪貼簿，請手動貼到網址欄位');
+    urlInput.focus();
+    return;
+  }
+  try {
+    const value = (await navigator.clipboard.readText()).trim();
+    if (!value) throw new Error('剪貼簿裡沒有網址');
+    urlInput.value = value;
+    urlInput.dispatchEvent(new Event('input', {bubbles: true}));
+    urlInput.focus();
+  } catch (error) {
+    showError(error.message || '無法讀取剪貼簿，請手動貼到網址欄位');
+    urlInput.focus();
+  }
+});
+
 lookupForm.addEventListener('submit', async event => {
   event.preventDefault();
+  const url = urlInput.value.trim();
+  clearParsedResult();
   clearError();
-  result.hidden = true;
-  progressPanel.hidden = true;
-  lookupButton.disabled = true;
-  lookupButton.firstChild.textContent = '解析中… ';
-  document.body.classList.add('loading');
-  const url = document.querySelector('#url').value.trim();
+  setLookupLoading(true);
 
   try {
     const response = await fetch('/api/info', {
@@ -108,7 +200,7 @@ lookupForm.addEventListener('submit', async event => {
       body: JSON.stringify({url}),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '無法解析內容');
+    if (!response.ok) throw new Error(data.error || '無法解析網址');
 
     const thumbnail = document.querySelector('#thumbnail');
     thumbnail.hidden = !data.thumbnail;
@@ -116,95 +208,75 @@ lookupForm.addEventListener('submit', async event => {
     document.querySelector('#title').textContent = data.title;
     document.querySelector('#channel').textContent = data.channel;
     document.querySelector('#duration').textContent = formatDuration(data.duration);
-    document.querySelector('#download-url').value = url;
+    downloadUrl.value = url;
 
     const imageMode = data.media_type === 'image';
     currentImageCount = imageMode ? Math.max(1, Number(data.image_count) || 1) : 0;
-    videoTab.hidden = imageMode;
-    audioTab.hidden = imageMode;
-    imageTab.hidden = !imageMode;
+    currentImageCountTruncated = imageMode && Boolean(data.image_count_truncated);
+
     if (imageMode) {
-      imageTab.innerHTML = currentImageCount > 1
-        ? `<span>▧</span> 照片 ${currentImageCount} 張`
-        : '<span>▧</span> 照片';
-    }
-
-    const select = document.querySelector('#quality');
-    select.innerHTML = '';
-    if (!imageMode) {
-      if (data.original_quality) {
-        select.add(new Option('原始畫質', 'original'));
-      } else (data.qualities.length ? data.qualities : [720]).forEach((height, index) => {
-        select.add(new Option(`${height}p${index === 0 ? ' · 最佳畫質' : ''}`, height));
-      });
+      qualityInput.value = 'best';
+      videoDownloadActions.hidden = true;
+      imageDownloadActions.hidden = false;
+      subtitleDownloadActions.hidden = true;
+      downloadImageButton.innerHTML = defaultButtonHtml('image');
     } else {
-      select.add(new Option('原始照片', 'original'));
+      qualityInput.value = data.original_quality ? 'original' : 'best';
+      const highest = data.highest_quality || (data.qualities || [])[0];
+      highestQualityLabel.textContent = data.original_quality
+        ? '最高畫質 · 原始畫質'
+        : highest
+          ? `最高畫質 · ${highest}p`
+          : '最高畫質';
+      videoDownloadActions.hidden = false;
+      imageDownloadActions.hidden = true;
+
+      subtitleSelect.innerHTML = '';
+      (data.subtitles || []).forEach(track => {
+        const suffix = track.automatic ? ' · 自動產生' : ' · 人工字幕';
+        subtitleSelect.add(new Option(`${track.label} (${track.code})${suffix}`, track.code));
+      });
+      subtitleDownloadActions.hidden = subtitleSelect.options.length === 0;
     }
 
-    subtitleSelect.innerHTML = '';
-    (data.subtitles || []).forEach(track => {
-      const suffix = track.automatic ? ' · 自動產生' : ' · 人工字幕';
-      subtitleSelect.add(new Option(`${track.label} (${track.code})${suffix}`, track.code));
-    });
-    subtitleTab.hidden = imageMode || subtitleSelect.options.length === 0;
-    selectDownloadType(imageMode ? 'image' : 'video');
+    resetActionButtonLabels();
+    if (!imageMode) {
+      const highest = data.highest_quality || (data.qualities || [])[0];
+      highestQualityLabel.textContent = data.original_quality
+        ? '最高畫質 · 原始畫質'
+        : highest
+          ? `最高畫質 · ${highest}p`
+          : '最高畫質';
+    }
     result.hidden = false;
     result.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+
     pendingPlaylist = imageMode ? null : data.playlist;
     if (pendingPlaylist) {
       playlistDescription.textContent = `「${pendingPlaylist.title}」共有 ${pendingPlaylist.count} 部影片。是否下載整份播放清單？`;
       playlistDialog.showModal();
     }
   } catch (error) {
+    clearParsedResult({clearMessage: false});
     showError(error.message);
   } finally {
-    lookupButton.disabled = false;
-    lookupButton.firstChild.textContent = '解析內容 ';
-    document.body.classList.remove('loading');
+    setLookupLoading(false);
   }
 });
-
-const selectDownloadType = type => {
-  document.querySelectorAll('.type-tab').forEach(item => item.classList.remove('active'));
-  const selectedTab = document.querySelector(`.type-tab[data-type="${type}"]`);
-  if (!selectedTab) return;
-  selectedTab.classList.add('active');
-  document.querySelectorAll('.type-tab').forEach(item => {
-    item.setAttribute('aria-selected', String(item === selectedTab));
-  });
-  const audio = type === 'audio';
-  const subtitle = type === 'subtitle';
-  const image = type === 'image';
-  document.querySelector('#download-type').value = type;
-  document.querySelector('#quality-group').hidden = audio || subtitle || image;
-  document.querySelector('#audio-note').hidden = !audio;
-  document.querySelector('#subtitle-group').hidden = !subtitle;
-  if (!downloadButton.disabled) {
-    downloadButton.innerHTML = subtitle
-      ? '<span>↓</span> 下載 CC 字幕'
-      : image
-        ? `<span>↓</span> ${currentImageCount > 1 ? `下載 ${currentImageCount} 張照片` : '下載照片'}`
-        : '<span>↓</span> 開始下載';
-  }
-};
-
-document.querySelectorAll('.type-tab').forEach(tab => {
-  tab.addEventListener('click', () => selectDownloadType(tab.dataset.type));
-});
-
-selectDownloadType('video');
 
 const setDownloadControlsDisabled = disabled => {
-  downloadButton.disabled = disabled;
   lookupButton.disabled = disabled;
-  document.querySelectorAll('.type-tab').forEach(tab => { tab.disabled = disabled; });
+  pasteUrlButton.disabled = disabled;
+  urlInput.disabled = disabled;
+  subtitleSelect.disabled = disabled;
+  downloadActionButtons.forEach(button => { button.disabled = disabled; });
 };
 
 const runDownloadJob = async ({url, type, quality, subtitle, onProgress = updateProgress}) => {
   const formData = new FormData();
   formData.append('url', url);
   formData.append('type', type);
-  formData.append('quality', quality);
+  formData.append('quality', quality || 'best');
   formData.append('subtitle', subtitle || '');
   const startResponse = await fetch('/api/download', {method: 'POST', body: formData});
   const startData = await startResponse.json();
@@ -232,11 +304,68 @@ const runDownloadJob = async ({url, type, quality, subtitle, onProgress = update
     }
     if (progressData.status === 'finished') {
       activeJobId = null;
-      const fallbackName = type === 'image' ? 'instagram-photo' : 'video-download.mp4';
-      return {cancelled: false, jobId, filename: progressData.filename || fallbackName};
+      const fallbackNames = {
+        image: 'photos.zip',
+        audio: 'audio-download.mp3',
+        subtitle: 'subtitle.srt',
+        video: 'video-download.mp4',
+      };
+      return {cancelled: false, jobId, filename: progressData.filename || fallbackNames[type]};
     }
   }
 };
+
+const sendFileToBrowser = job => {
+  const link = document.createElement('a');
+  link.href = `/api/download/${job.jobId}/file`;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+const completedButtonHtml = type => {
+  if (type === 'audio') return '<span>✓</span> MP3 已送出';
+  if (type === 'image') return '<span>✓</span> 照片已送出';
+  if (type === 'subtitle') return '<span>✓</span> CC 字幕已送出';
+  return '<span>✓</span> MP4 已送出';
+};
+
+const startSingleDownload = async (button, type) => {
+  if (activeJobId || activeBatch || button.disabled || !downloadUrl.value) return;
+  clearError();
+  resetProgress();
+  setDownloadControlsDisabled(true);
+  button.innerHTML = '<span>◌</span> 正在處理，請稍候…';
+  let completed = false;
+
+  try {
+    const job = await runDownloadJob({
+      url: downloadUrl.value,
+      type,
+      quality: qualityInput.value || 'best',
+      subtitle: type === 'subtitle' ? subtitleSelect.value : '',
+    });
+    if (job.cancelled) return;
+    completed = true;
+    stopDownloadButton.hidden = true;
+    sendFileToBrowser(job);
+    button.innerHTML = completedButtonHtml(type);
+  } catch (error) {
+    showError(error.message);
+    progressStatus.textContent = '下載未完成';
+    stopDownloadButton.hidden = true;
+  } finally {
+    activeJobId = null;
+    setDownloadControlsDisabled(false);
+    if (!completed) button.innerHTML = defaultButtonHtml(type);
+  }
+};
+
+downloadVideoButton.addEventListener('click', () => startSingleDownload(downloadVideoButton, 'video'));
+downloadAudioButton.addEventListener('click', () => startSingleDownload(downloadAudioButton, 'audio'));
+downloadImageButton.addEventListener('click', () => startSingleDownload(downloadImageButton, 'image'));
+downloadSubtitleButton.addEventListener('click', () => startSingleDownload(downloadSubtitleButton, 'subtitle'));
 
 const saveJobToDirectory = async (job, directoryHandle, itemNumber, totalItems) => {
   const digits = String(totalItems).length;
@@ -267,50 +396,14 @@ const saveJobToDirectory = async (job, directoryHandle, itemNumber, totalItems) 
   }
 };
 
-downloadButton.addEventListener('click', async () => {
-  if (activeJobId || activeBatch || downloadButton.disabled) return;
-  clearError();
-  resetProgress();
-  setDownloadControlsDisabled(true);
-  downloadButton.innerHTML = '<span>◌</span> 正在處理，請稍候…';
-  let completed = false;
-
-  try {
-    const job = await runDownloadJob({
-      url: document.querySelector('#download-url').value,
-      type: document.querySelector('#download-type').value,
-      quality: document.querySelector('#quality').value,
-      subtitle: subtitleSelect.value,
-    });
-    if (job.cancelled) return;
-    completed = true;
-    stopDownloadButton.hidden = true;
-    const link = document.createElement('a');
-    link.href = `/api/download/${job.jobId}/file`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    downloadButton.innerHTML = '<span>✓</span> 已送出，請查看瀏覽器下載項目';
-  } catch (error) {
-    showError(error.message);
-    progressStatus.textContent = '下載未完成';
-    stopDownloadButton.hidden = true;
-  } finally {
-    activeJobId = null;
-    setDownloadControlsDisabled(false);
-    if (!completed) downloadButton.innerHTML = '<span>↓</span> 重新下載';
-  }
-});
-
 const startPlaylistBatch = async (playlist, directoryHandle) => {
   if (activeJobId || activeBatch) return;
   clearError();
   resetProgress();
   setDownloadControlsDisabled(true);
   activeBatch = {cancelled: false};
-  downloadButton.innerHTML = '<span>◌</span> 正在批次下載…';
-  const quality = document.querySelector('#quality').value || '720';
+  downloadVideoButton.innerHTML = '<span>◌</span> 正在批次下載…';
+  const quality = qualityInput.value || 'best';
   let completedCount = 0;
 
   try {
@@ -346,17 +439,17 @@ const startPlaylistBatch = async (playlist, directoryHandle) => {
 
     if (activeBatch.cancelled) {
       progressStatus.textContent = `批次下載已停止，已完成 ${completedCount}/${playlist.entries.length} 部`;
-      downloadButton.innerHTML = '<span>↓</span> 重新下載';
+      downloadVideoButton.innerHTML = defaultButtonHtml('video');
     } else {
       progressStatus.textContent = `播放清單下載完成，共 ${completedCount} 部`;
       progressPercent.textContent = '100%';
       progressBar.style.width = '100%';
-      downloadButton.innerHTML = '<span>✓</span> 全部下載完成';
+      downloadVideoButton.innerHTML = '<span>✓</span> 全部下載完成';
     }
   } catch (error) {
     if (error.name !== 'AbortError') showError(error.message);
     progressStatus.textContent = `批次下載未完成，已完成 ${completedCount}/${playlist.entries.length} 部`;
-    downloadButton.innerHTML = '<span>↓</span> 重新下載';
+    downloadVideoButton.innerHTML = defaultButtonHtml('video');
   } finally {
     activeJobId = null;
     activeBatch = null;
@@ -411,3 +504,5 @@ window.addEventListener('pagehide', () => {
   const sent = navigator.sendBeacon(cancelUrl, new Blob([], {type: 'application/octet-stream'}));
   if (!sent) fetch(cancelUrl, {method: 'POST', keepalive: true}).catch(() => {});
 });
+
+clearParsedResult();
