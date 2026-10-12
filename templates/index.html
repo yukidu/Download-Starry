@@ -126,7 +126,8 @@
       <form id="lookup-form" class="url-row">
         <span class="link-icon" aria-hidden="true">↗</span>
         <input id="url" type="url" required autocomplete="off" placeholder="貼上影音／照片網址…" aria-label="影音或照片網址">
-        <button id="lookup-button" type="submit">解析內容 <span>→</span></button>
+        <button id="paste-url-button" class="paste-url-button" type="button">貼上網址</button>
+        <button id="lookup-button" type="submit">解析網址 <span>→</span></button>
       </form>
       <div id="message" class="message" role="alert"></div>
 
@@ -137,17 +138,28 @@
         </div>
 
         <div id="download-form">
-          <div class="type-tabs" role="tablist">
-            <button id="video-tab" class="type-tab active" type="button" data-type="video"><span>▣</span> 影片 MP4</button>
-            <button id="audio-tab" class="type-tab" type="button" data-type="audio"><span>♫</span> 音訊 MP3</button>
-            <button id="image-tab" class="type-tab" type="button" data-type="image" hidden><span>▧</span> 照片</button>
-            <button id="subtitle-tab" class="type-tab" type="button" data-type="subtitle" hidden><span>CC</span> CC 字幕</button>
+          <input id="download-url" name="url" type="hidden">
+          <input id="quality" name="quality" type="hidden" value="best">
+
+          <div id="video-download-actions" class="download-actions">
+            <div class="quality-display" aria-live="polite">
+              <span>下載畫質</span>
+              <strong id="highest-quality-label">最高畫質</strong>
+            </div>
+            <div class="download-action-grid">
+              <button id="download-video-button" class="download-button download-action-button" type="button" data-download-type="video"><span>↓</span> 下載 MP4</button>
+              <button id="download-audio-button" class="download-button download-action-button" type="button" data-download-type="audio"><span>♫</span> 下載 MP3</button>
+            </div>
           </div>
-          <input id="download-url" name="url" type="hidden"><input id="download-type" name="type" value="video" type="hidden">
-          <label id="quality-group">選擇畫質<select id="quality" name="quality"></select></label>
-          <div id="audio-note" class="audio-note" hidden><span>♫</span><div><strong>MP3 音訊</strong></div></div>
-          <label id="subtitle-group" hidden>選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
-          <button id="download-button" class="download-button" type="button"><span>↓</span> 開始下載</button>
+
+          <div id="image-download-actions" class="download-actions" hidden>
+            <button id="download-image-button" class="download-button download-action-button" type="button" data-download-type="image"><span>↓</span> 下載照片</button>
+          </div>
+
+          <div id="subtitle-download-actions" class="download-actions subtitle-download-actions" hidden>
+            <label id="subtitle-group">選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
+            <button id="download-subtitle-button" class="download-button download-action-button" type="button" data-download-type="subtitle"><span>CC</span> 下載 CC 字幕</button>
+          </div>
         </div>
       </div>
     </section>
