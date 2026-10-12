@@ -1,11 +1,21 @@
 """Authenticated container entry point. Desktop launches continue using app.py."""
 import hmac
 import os
+import sys
 from threading import Event, Thread
 
 os.environ['APP_MODE'] = 'cloud'
 from flask import jsonify, request
 from app import app, cleanup_stale_jobs, APP_VERSION
+import wechat
+import wechat_cloud
+
+# Cloud-only selection policy. app.py imports the same wechat module object, so
+# replacing the selector here affects only the real container entry point. During
+# pytest we leave the base module untouched; wechat_cloud.best_video has its own
+# isolated regression tests and this prevents test-order pollution.
+if 'pytest' not in sys.modules:
+    wechat._best_video = wechat_cloud.best_video
 
 backend_token = os.environ.get('CLOUD_BACKEND_TOKEN', '')
 if len(backend_token) < 32:
