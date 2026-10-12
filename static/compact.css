@@ -1,0 +1,203 @@
+/* 16:9 desktop layout: keep the complete downloader in one viewport. */
+.top-download-progress {
+  margin: 0 0 10px;
+}
+
+@media (min-width: 801px) and (min-height: 650px) {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    overflow-y: hidden;
+  }
+
+  .site-header {
+    position: relative;
+  }
+
+  main {
+    height: calc(100vh - 64px);
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: start;
+    padding: 0 0 10px;
+  }
+
+  .hero {
+    margin: 14px auto 10px;
+    padding: 0 18px;
+  }
+
+  .platform-icons {
+    margin-top: 0;
+    gap: 13px;
+  }
+
+  .platform-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .platform-icon svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .downloader {
+    width: min(940px, calc(100% - 30px));
+    max-height: calc(100vh - 142px);
+    margin: 0 auto;
+    padding: 10px;
+    border-radius: 22px;
+  }
+
+  .top-download-progress {
+    margin: 0 0 8px;
+    padding: 10px 13px;
+  }
+
+  .progress-heading {
+    margin-bottom: 7px;
+  }
+
+  .progress-detail {
+    margin-top: 6px;
+    min-height: 14px;
+  }
+
+  .progress-track {
+    height: 8px;
+  }
+
+  .url-row {
+    padding: 6px 7px 6px 15px;
+    border-radius: 15px;
+  }
+
+  .url-row input {
+    padding: 12px 12px;
+  }
+
+  .url-row button {
+    min-height: 46px;
+  }
+
+  .message {
+    margin-top: 7px;
+    padding: 9px 12px;
+  }
+
+  .result {
+    padding: 9px 8px 4px;
+  }
+
+  .media-card {
+    gap: 14px;
+    padding: 5px 2px 10px;
+  }
+
+  .thumb-wrap {
+    width: 150px;
+    height: 84px;
+    border-radius: 11px;
+  }
+
+  .media-meta h2 {
+    margin-top: 4px;
+    font-size: 17px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+  }
+
+  .type-tabs {
+    gap: 6px;
+    margin: 10px 0;
+    padding: 4px;
+  }
+
+  .type-tab {
+    padding: 9px 8px;
+    font-size: 15px;
+  }
+
+  label {
+    padding: 0 5px 9px;
+  }
+
+  select {
+    padding: 9px 12px;
+  }
+
+  .audio-note {
+    margin: 2px 4px 9px;
+    padding: 9px 12px;
+  }
+
+  .download-button {
+    min-height: 48px;
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 801px) and (max-height: 760px) {
+  .site-header-row {
+    height: 58px;
+  }
+
+  main {
+    height: calc(100vh - 58px);
+  }
+
+  .hero {
+    margin: 8px auto 7px;
+  }
+
+  .platform-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .platform-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .downloader {
+    max-height: calc(100vh - 116px);
+    padding: 8px;
+  }
+
+  .thumb-wrap {
+    width: 132px;
+    height: 74px;
+  }
+
+  .media-card {
+    padding-bottom: 7px;
+  }
+
+  .type-tabs {
+    margin: 7px 0;
+  }
+
+  .type-tab {
+    padding: 7px 8px;
+  }
+
+  label {
+    padding-bottom: 7px;
+  }
+
+  .download-button {
+    min-height: 44px;
+  }
+
+  .top-download-progress {
+    padding: 8px 11px;
+  }
+}
