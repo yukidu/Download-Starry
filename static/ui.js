@@ -94,6 +94,28 @@
         transform: translateY(-5px) scale(1.08);
         box-shadow: 0 18px 38px rgba(62,69,140,.26), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
       }
+      .platform-icon.platform-xiaohongshu {
+        background: #ff2442 !important;
+        color: #fff !important;
+        border-color: #ff2442 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 10px 26px rgba(255,36,66,.24);
+      }
+      .platform-icon.platform-xiaohongshu .xiaohongshu-wordmark {
+        display: inline-block;
+        color: #fff;
+        font-family: "Noto Sans SC", "Noto Sans TC", sans-serif;
+        font-size: 10px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -.08em;
+        white-space: nowrap;
+        transform: translateX(-.3px) scaleX(.96);
+        transform-origin: center;
+      }
+      .platform-icon.platform-xiaohongshu.platform-active {
+        box-shadow: 0 18px 38px rgba(255,36,66,.34), 0 0 0 3px rgba(255,36,66,.18);
+      }
       .platform-name-bubble {
         position: absolute;
         top: 50%;
@@ -165,6 +187,7 @@
       @media (max-width: 700px) {
         .downloader > .hero { margin-top: 10px; }
         .platform-name-bubble { font-size: 18px; padding: 9px 13px; }
+        .platform-icon.platform-xiaohongshu .xiaohongshu-wordmark { font-size: 9px; }
       }
     `;
     document.head.appendChild(style);
@@ -410,7 +433,7 @@
       ['Threads', '@', 'var(--ink)'],
       ['X', '𝕏', 'var(--ink)'],
       ['Dcard', 'D', '#3397cf'],
-      ['小紅書', 'RED', '#ff2442'],
+      ['小紅書', '小红书', '#ff2442'],
       ['Bilibili', 'B', '#00aeec'],
       ['Twitch', '▰', '#9146ff'],
       ['Vimeo', 'V', '#1ab7ea'],
@@ -429,10 +452,16 @@
       const mark = document.createElement('span');
       mark.textContent = glyph;
       mark.setAttribute('aria-hidden', 'true');
-      mark.style.fontFamily = 'DM Sans, Noto Sans TC, sans-serif';
-      mark.style.fontWeight = '900';
-      mark.style.fontSize = glyph.length > 2 ? '12px' : '20px';
-      mark.style.letterSpacing = glyph.length > 2 ? '-0.04em' : '0';
+      if (name === '小紅書') {
+        item.classList.add('platform-xiaohongshu');
+        item.style.color = '#fff';
+        mark.className = 'xiaohongshu-wordmark';
+      } else {
+        mark.style.fontFamily = 'DM Sans, Noto Sans TC, sans-serif';
+        mark.style.fontWeight = '900';
+        mark.style.fontSize = glyph.length > 2 ? '12px' : '20px';
+        mark.style.letterSpacing = glyph.length > 2 ? '-0.04em' : '0';
+      }
       item.appendChild(mark);
       container.appendChild(item);
     });
