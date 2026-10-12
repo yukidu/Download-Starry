@@ -2,6 +2,7 @@
 !app.py
 !wechat.py
 !wechat_cloud.py
+!facebook_gallery.py
 !VERSION
 !requirements.txt
 !deployment/
