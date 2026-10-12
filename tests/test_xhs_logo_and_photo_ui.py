@@ -3,6 +3,8 @@ from pathlib import Path
 
 UI = Path('static/ui.js').read_text(encoding='utf-8')
 APP_JS = Path('static/app.js').read_text(encoding='utf-8')
+APP_CORE = Path('static/app-core.js').read_text(encoding='utf-8')
+PLATFORM = Path('static/platform.js').read_text(encoding='utf-8')
 INDEX = Path('templates/index.html').read_text(encoding='utf-8')
 
 
@@ -27,11 +29,16 @@ def test_url_and_download_ui_matches_simplified_flow():
     assert 'data-download-type="video"' in INDEX
     assert 'data-download-type="audio"' in INDEX
     assert 'data-download-type="image"' in INDEX
-    assert "navigator.clipboard?.readText" in APP_JS
-    assert "clearParsedResult" in APP_JS
-    assert "urlInput.addEventListener('input'" in APP_JS
-    assert "data.media_type === 'image'" in APP_JS
-    assert "qualityInput.value = data.original_quality ? 'original' : 'best'" in APP_JS
-    assert "startSingleDownload(downloadVideoButton, 'video')" in APP_JS
-    assert "startSingleDownload(downloadAudioButton, 'audio')" in APP_JS
-    assert '打包下載 ${count} 張照片' in APP_JS
+
+    assert '/static/platform.js' in APP_JS
+    assert '/static/api.js' in APP_JS
+    assert '/static/app-core.js' in APP_JS
+    assert 'navigator.clipboard?.readText' in PLATFORM
+    assert 'navigator.clipboard?.readText' not in APP_CORE
+    assert "clearParsedResult" in APP_CORE
+    assert "urlInput.addEventListener('input'" in APP_CORE
+    assert "data.media_type === 'image'" in APP_CORE
+    assert "qualityInput.value = data.original_quality ? 'original' : 'best'" in APP_CORE
+    assert "startSingleDownload(downloadVideoButton, 'video')" in APP_CORE
+    assert "startSingleDownload(downloadAudioButton, 'audio')" in APP_CORE
+    assert '打包下載 ${count} 張照片' in APP_CORE
