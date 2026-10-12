@@ -18,7 +18,7 @@ COPY deployment/requirements.txt deployment/requirements.txt
 RUN pip install --no-cache-dir -r deployment/requirements.txt
 COPY app.py wechat.py wechat_cloud.py VERSION ./
 COPY yt_dlp_plugins/ yt_dlp_plugins/
-RUN python -c "from yt_dlp_plugins.extractor.dcard import DcardIE; from yt_dlp_plugins.extractor.savevideo_redirects import SaveVideoShortRedirectIE; from yt_dlp_plugins.extractor.threads import ThreadsIE"
+RUN python -c "from yt_dlp_plugins.extractor.dcard import DcardIE; from yt_dlp_plugins.extractor.ganjingworld import GanJingWorldIE; from yt_dlp_plugins.extractor.savevideo_redirects import SaveVideoShortRedirectIE; from yt_dlp_plugins.extractor.threads import ThreadsIE; from yt_dlp.extractor.lbry import LBRYIE; assert GanJingWorldIE.suitable('https://www.ganjingworld.com/video/1f7srq4ett0373aCVOuRtTA1h1i61c'); assert LBRYIE.suitable('https://odysee.com/@demo:1/video:2')"
 COPY deployment/server.py deployment/__init__.py deployment/
 COPY templates/ templates/
 COPY static/ static/

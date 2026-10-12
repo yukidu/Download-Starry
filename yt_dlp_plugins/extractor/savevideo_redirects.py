@@ -10,6 +10,7 @@ _TARGETS = {
     'b23.tv': ('bilibili.com', 'bilibili.tv'),
     'pin.it': ('pinterest.com', 'pinterest.tw'),
     'xhslink.com': ('xiaohongshu.com',),
+    'gjw.us': ('ganjingworld.com', 'ganjing.com'),
 }
 
 
@@ -20,7 +21,7 @@ def _host_matches(hostname: str, domains: tuple[str, ...]) -> bool:
 
 class SaveVideoShortRedirectIE(InfoExtractor):
     IE_NAME = 'savevideo:shortredirect'
-    _VALID_URL = r'https?://(?:www\.)?(?P<host>b23\.tv|pin\.it|xhslink\.com)/(?P<id>[^?#]+)'
+    _VALID_URL = r'https?://(?:www\.)?(?P<host>b23\.tv|pin\.it|xhslink\.com|gjw\.us)/(?P<id>[^?#]+)'
 
     def _real_extract(self, url):
         match = self._match_valid_url(url)
