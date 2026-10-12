@@ -49,10 +49,12 @@ test('API endpoints are centralized and default to same-origin', async () => {
 
 test('PWA manifest remains web-first and standalone capable', async () => {
   const manifest = JSON.parse(await text('static/manifest.webmanifest'));
+  const bootstrap = await text('static/app.js');
   assert.equal(manifest.start_url, '/');
   assert.equal(manifest.scope, '/');
   assert.equal(manifest.display, 'standalone');
   assert.ok(Array.isArray(manifest.icons) && manifest.icons.length >= 1);
+  assert.match(bootstrap, /\/static\/manifest\.webmanifest/);
 });
 
 test('service worker keeps API and static assets out of runtime cache interception', async () => {
