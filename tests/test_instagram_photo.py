@@ -1,3 +1,4 @@
+import os
 import tempfile
 import time
 import zipfile
@@ -5,6 +6,11 @@ from pathlib import Path
 from threading import Event
 
 import app as app_module
+
+
+def _backend_headers():
+    token = os.environ.get('CLOUD_BACKEND_TOKEN')
+    return {'X-Backend-Token': token} if token else {}
 
 
 def _photo_post_info():
@@ -69,7 +75,10 @@ def test_info_api_auto_switches_instagram_photo(monkeypatch):
 
     monkeypatch.setattr(app_module, 'YoutubeDL', FakeYDL)
     response = app_module.app.test_client().post(
-        '/api/info', json={'url': 'https://www.instagram.com/p/PHOTO123/'})
+        '/api/info',
+        headers=_backend_headers(),
+        json={'url': 'https://www.instagram.com/p/PHOTO123/'},
+    )
     assert response.status_code == 200
     data = response.get_json()
     assert data['media_type'] == 'image'
@@ -80,7 +89,7 @@ def test_info_api_auto_switches_instagram_photo(monkeypatch):
 
 
 def test_image_download_is_restricted_to_instagram():
-    response = app_module.app.test_client().post('/api/download', data={
+    response = app_module.app.test_client().post('/api/download', headers=_backend_headers(), data={
         'url': 'https://www.youtube.com/watch?v=abcdefghijk',
         'type': 'image',
         'quality': 'original',
