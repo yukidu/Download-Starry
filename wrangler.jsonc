@@ -13,6 +13,5 @@
     "bindings": [{"name": "DOWNLOADER", "class_name": "VideoDownloader"}]
   },
   "migrations": [{"tag": "v1", "new_sqlite_classes": ["VideoDownloader"]}],
-  "vars": {"AUTH_USER": "samuel"},
   "observability": {"enabled": false}
 }
