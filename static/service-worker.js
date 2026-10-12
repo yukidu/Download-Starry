@@ -10,6 +10,7 @@ const SHELL_ASSETS = [
   '/static/platform.js',
   '/static/api.js',
   '/static/app.js',
+  '/static/app-core.js',
   '/static/provider-ui.js',
   '/static/ui.js',
   '/static/manifest.webmanifest',
