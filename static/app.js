@@ -1,62 +1,30 @@
 'use strict';
-
 (() => {
-  const ensureMeta = (name, content) => {
-    let meta = document.querySelector(`meta[name="${name}"]`);
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = name;
-      document.head.appendChild(meta);
-    }
-    if (!meta.content) meta.content = content;
-  };
+  const head = document.head;
+  head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0b1026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
 
-  if (!document.querySelector('link[rel="manifest"]')) {
-    const manifest = document.createElement('link');
-    manifest.rel = 'manifest';
-    manifest.href = '/static/manifest.webmanifest';
-    document.head.appendChild(manifest);
-  }
-  ensureMeta('theme-color', '#0b1026');
-  ensureMeta('apple-mobile-web-app-capable', 'yes');
-  ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
-  ensureMeta('app-api-base', '');
-
-  const loadScript = src => new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[data-savevideo-bootstrap="${src}"]`);
-    if (existing) {
-      if (existing.dataset.loaded === 'true') resolve();
-      else {
-        existing.addEventListener('load', resolve, {once: true});
-        existing.addEventListener('error', reject, {once: true});
-      }
-      return;
-    }
-
+  const sources = ['/static/platform.js', '/static/api.js', '/static/app-core.js'];
+  sources.forEach(href => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'script';
+    link.href = href;
+    head.appendChild(link);
+  });
+  const load = src => new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
-    script.async = false;
-    script.dataset.savevideoBootstrap = src;
-    script.addEventListener('load', () => {
-      script.dataset.loaded = 'true';
-      resolve();
-    }, {once: true});
-    script.addEventListener('error', () => reject(new Error(`無法載入 ${src}`)), {once: true});
-    document.head.appendChild(script);
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`無法載入 ${src}`));
+    head.appendChild(script);
   });
-
-  const boot = async () => {
-    if (!window.SaveVideoPlatform) await loadScript('/static/platform.js');
-    if (!window.SaveVideoAPI) await loadScript('/static/api.js');
-    await loadScript('/static/app-core.js');
-  };
-
-  boot().catch(error => {
-    console.error('SaveVideo bootstrap failed', error);
-    const message = document.getElementById('message');
-    if (message) {
+  Promise.all([load(sources[0]), load(sources[1])])
+    .then(() => load(sources[2]))
+    .catch(error => {
+      console.error('SaveVideo bootstrap failed', error);
+      const message = document.getElementById('message');
+      if (!message) return;
       message.textContent = '程式載入未完成，請重新整理頁面後再試';
       message.classList.add('show');
-    }
-  });
+    });
 })();
