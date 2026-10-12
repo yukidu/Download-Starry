@@ -4,3 +4,4 @@ FFmpeg (Gyan): runtime/ffmpeg/LICENSE.txt; https://github.com/GyanD/codexffmpeg
 Deno: runtime/deno/LICENSE.txt; https://github.com/denoland/deno
 WeChat engine: wechat-channels/engine/LICENSE.upstream.txt; https://github.com/ltaoo/wx_channels_download
 WeChat engine MIT + Commons Clause: functionality may not be sold.
+Threads yt-dlp plugin: yt-dlp-threads 0.1.0, Unlicense; https://github.com/tribixbite/yt-dlp-threads

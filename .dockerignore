@@ -12,3 +12,5 @@
 !templates/**
 !static/
 !static/**
+!yt_dlp_plugins/
+!yt_dlp_plugins/**
