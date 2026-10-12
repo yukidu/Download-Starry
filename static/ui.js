@@ -90,6 +90,7 @@
       }
       .platform-icon.platform-active {
         z-index: 24;
+        animation-play-state: paused;
         transform: translateY(-5px) scale(1.08);
         box-shadow: 0 18px 38px rgba(62,69,140,.26), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
       }
