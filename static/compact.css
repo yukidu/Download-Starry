@@ -201,3 +201,19 @@
     padding: 8px 11px;
   }
 }
+
+/* 使用者要求：移除下載區最外層的大型圓角框，只保留裡面的實際控制元件。 */
+.downloader {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+}
+
+.downloader::before {
+  display: none;
+}
