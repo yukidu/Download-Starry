@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+import zipfile
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from logging.handlers import RotatingFileHandler
@@ -85,6 +86,8 @@ SUPPORTED_HOSTS = {
     "Pinterest": ("pinterest.com", "pinterest.tw", "pin.it"),
 }
 
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
+
 
 def platform_for_url(value: str) -> str | None:
     if wechat.share_id(value):
@@ -136,6 +139,46 @@ def subtitle_tracks(info: dict) -> list[dict]:
             tracks.append({"code": language, "label": label, "automatic": automatic})
             seen_languages.add(language)
     return sorted(tracks, key=lambda track: (track["automatic"], track["label"].casefold()))
+
+
+def info_entries(info: dict) -> list[dict]:
+    if not isinstance(info, dict):
+        return []
+    entries = [entry for entry in (info.get("entries") or []) if isinstance(entry, dict)]
+    return entries or [info]
+
+
+def entry_has_video(entry: dict) -> bool:
+    return any(
+        isinstance(fmt, dict)
+        and fmt.get("url")
+        and fmt.get("vcodec") != "none"
+        for fmt in (entry.get("formats") or [])
+    )
+
+
+def best_thumbnail_url(entry: dict) -> str | None:
+    thumbnail = entry.get("thumbnail")
+    if isinstance(thumbnail, str) and thumbnail.startswith(("http://", "https://")):
+        return thumbnail
+    candidates = [
+        item for item in (entry.get("thumbnails") or [])
+        if isinstance(item, dict) and isinstance(item.get("url"), str)
+    ]
+    if not candidates:
+        return None
+    best = max(
+        candidates,
+        key=lambda item: (int(item.get("width") or 0) * int(item.get("height") or 0), int(item.get("width") or 0)),
+    )
+    return best.get("url")
+
+
+def instagram_photo_entries(info: dict) -> list[dict]:
+    entries = info_entries(info)
+    if not entries or any(entry_has_video(entry) for entry in entries):
+        return []
+    return [entry for entry in entries if best_thumbnail_url(entry)]
 
 
 def update_job(job_id: str, **changes) -> None:
@@ -224,7 +267,11 @@ def download_worker(
                 total_bytes=total,
                 speed=data.get("speed"),
                 eta=data.get("eta"),
-                message="正在下載字幕" if kind == "subtitle" else "正在下載影片資料",
+                message=(
+                    "正在下載字幕" if kind == "subtitle"
+                    else "正在下載照片" if kind == "image"
+                    else "正在下載影片資料"
+                ),
             )
         elif status == "finished":
             update_job(
@@ -233,7 +280,7 @@ def download_worker(
                 progress=96,
                 speed=None,
                 eta=None,
-                message="下載完成，正在合併與轉檔",
+                message="下載完成，正在整理檔案" if kind == "image" else "下載完成，正在合併與轉檔",
             )
 
     def postprocessor_hook(data: dict) -> None:
@@ -273,7 +320,14 @@ def download_worker(
         "progress_hooks": [progress_hook],
         "postprocessor_hooks": [postprocessor_hook],
     }
-    if kind == "subtitle":
+    if kind == "image":
+        options.update({
+            "skip_download": True,
+            "writethumbnail": True,
+            "ignore_no_formats_error": True,
+            "noplaylist": False,
+        })
+    elif kind == "subtitle":
         options.update({
             "skip_download": True,
             "writesubtitles": True,
@@ -309,7 +363,12 @@ def download_worker(
         if cancellation_requested():
             cancel_event.set()
             raise DownloadCancelled("下載已由使用者停止")
-        update_job(job_id, status="downloading", progress=0, message="正在連線至影片平台")
+        update_job(
+            job_id,
+            status="downloading",
+            progress=0,
+            message="正在連線至 Instagram 照片" if kind == "image" else "正在連線至影片平台",
+        )
         wechat_info = None
         with YoutubeDL(options) as ydl:
             if platform == "WeChat":
@@ -366,19 +425,51 @@ def download_worker(
                     raise DownloadError("WECHAT_AUDIO_CONVERSION_FAILED")
                 source_file.unlink(missing_ok=True)
 
-        expected_extension = {"audio": ".mp3", "subtitle": ".srt"}.get(kind, ".mp4")
-        candidates = list(Path(temp_dir).glob(f"*{expected_extension}"))
-        if not candidates:
-            candidates = [
+        image_count = 0
+        if kind == "image":
+            update_job(
+                job_id,
+                status="processing",
+                progress=97,
+                speed=None,
+                eta=None,
+                message="正在整理 Instagram 照片",
+            )
+            image_candidates = sorted(
                 path for path in Path(temp_dir).iterdir()
-                if path.is_file() and path.suffix not in {".part", ".ytdl"}
-            ]
-        if not candidates:
-            raise RuntimeError("output file missing")
+                if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
+            )
+            if not image_candidates:
+                raise DownloadError("INSTAGRAM_IMAGE_MISSING")
+            image_count = len(image_candidates)
+            total_image_bytes = sum(path.stat().st_size for path in image_candidates)
+            if MAX_DOWNLOAD_BYTES and total_image_bytes > MAX_DOWNLOAD_BYTES:
+                raise DownloadError("CLOUD_SIZE_LIMIT")
+            if image_count == 1:
+                result = image_candidates[0]
+            else:
+                result = Path(temp_dir) / "instagram-photos.zip"
+                with zipfile.ZipFile(result, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                    digits = len(str(image_count))
+                    for index, path in enumerate(image_candidates, start=1):
+                        archive.write(path, arcname=f"{index:0{digits}d}-{path.name}")
+                for path in image_candidates:
+                    path.unlink(missing_ok=True)
+        else:
+            expected_extension = {"audio": ".mp3", "subtitle": ".srt"}.get(kind, ".mp4")
+            candidates = list(Path(temp_dir).glob(f"*{expected_extension}"))
+            if not candidates:
+                candidates = [
+                    path for path in Path(temp_dir).iterdir()
+                    if path.is_file() and path.suffix not in {".part", ".ytdl"}
+                ]
+            if not candidates:
+                raise RuntimeError("output file missing")
+            result = max(candidates, key=lambda path: path.stat().st_size)
 
-        result = max(candidates, key=lambda path: path.stat().st_size)
         language_suffix = f" [{subtitle_language}]" if kind == "subtitle" else ""
-        filename = f"{safe_title(info.get('title') or f'{platform}-download')}{language_suffix}{result.suffix}"
+        image_suffix = f" [{image_count} photos]" if kind == "image" and image_count > 1 else ""
+        filename = f"{safe_title(info.get('title') or f'{platform}-download')}{language_suffix}{image_suffix}{result.suffix}"
         update_job(
             job_id,
             status="finished",
@@ -387,7 +478,7 @@ def download_worker(
             total_bytes=result.stat().st_size,
             speed=None,
             eta=0,
-            message="處理完成，準備儲存檔案",
+            message="照片整理完成，準備儲存檔案" if kind == "image" else "處理完成，準備儲存檔案",
             result=str(result),
             filename=filename,
         )
@@ -407,11 +498,13 @@ def download_worker(
         if isinstance(exc, wechat.WeChatError):
             error_message = str(exc)
         elif "CLOUD_SIZE_LIMIT" in error_detail:
-            error_message = "影片超過此服務的單次大小限制，請降低畫質或使用本機版"
+            error_message = "檔案超過此服務的單次大小限制，請降低畫質或使用本機版"
+        elif "INSTAGRAM_IMAGE_MISSING" in error_detail:
+            error_message = "找不到可下載的 Instagram 照片。內容可能需要登入、已刪除或暫時無法公開讀取"
         elif "RemoteDisconnected" in error_detail or "Connection aborted" in error_detail:
-            error_message = "影片平台中斷連線，自動續傳與重試後仍未完成。請稍後再試或降低畫質"
+            error_message = "影音平台中斷連線，自動續傳與重試後仍未完成。請稍後再試或降低畫質"
         else:
-            error_message = "下載失敗。請確認影片可公開播放且不需要登入，或稍後再試"
+            error_message = "下載失敗。請確認內容可公開瀏覽且不需要登入，或稍後再試"
         app.logger.exception(
             "Download failed: job=%s platform=%s type=%s quality=%s subtitle=%s",
             job_id, platform, kind, quality, subtitle_language or "-",
@@ -437,17 +530,23 @@ def index():
 def video_info():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict) or not isinstance(payload.get("url"), str):
-        return jsonify(error="影片網址格式無效"), 400
+        return jsonify(error="影音網址格式無效"), 400
     url = payload["url"].strip()
     platform = platform_for_url(url)
     if not platform:
-        return jsonify(error="請輸入支援平台的公開影音分享網址"), 400
+        return jsonify(error="請輸入支援平台的公開影音或照片分享網址"), 400
 
     try:
         if platform == "WeChat":
             info = wechat.resolve(url)
         else:
-            with YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
+            metadata_options = {"quiet": True, "no_warnings": True, "noplaylist": True}
+            if platform == "Instagram":
+                metadata_options.update({
+                    "noplaylist": False,
+                    "ignore_no_formats_error": True,
+                })
+            with YoutubeDL(metadata_options) as ydl:
                 info = ydl.extract_info(url, download=False)
     except wechat.WeChatError as exc:
         return jsonify(error=str(exc)), 422
@@ -455,10 +554,15 @@ def video_info():
         app.logger.warning("Metadata failed: platform=%s detail=%s", platform, exc)
         if platform == "Instagram" and "empty media response" in str(exc).lower():
             return jsonify(error="Instagram 解析元件需要更新。請關閉程式並重新執行 start.bat；若更新後仍失敗，該內容可能需要登入"), 422
-        return jsonify(error="無法讀取影片。內容可能設為私人、需要登入、受地區限制或網址無效"), 422
+        return jsonify(error="無法讀取內容。內容可能設為私人、需要登入、受地區限制或網址無效"), 422
 
+    photo_entries = instagram_photo_entries(info) if platform == "Instagram" else []
+    image_mode = bool(photo_entries)
+    height_sources = [] if image_mode else info_entries(info)
     heights = sorted({
-        int(f["height"]) for f in info.get("formats", [])
+        int(f["height"])
+        for entry in height_sources
+        for f in (entry.get("formats") or [])
         if f.get("height") and f.get("vcodec") != "none"
     }, reverse=True)
     qualities = [h for h in heights if h <= 4320]
@@ -499,16 +603,22 @@ def video_info():
         except DownloadError as exc:
             app.logger.warning("Playlist metadata failed: detail=%s", exc)
 
+    thumbnail = info.get("thumbnail")
+    if image_mode and not thumbnail:
+        thumbnail = best_thumbnail_url(photo_entries[0])
+
     return jsonify({
-        "title": info.get("title") or "未命名影片",
-        "thumbnail": info.get("thumbnail"),
-        "duration": info.get("duration"),
+        "title": info.get("title") or ("Instagram 照片" if image_mode else "未命名影片"),
+        "thumbnail": thumbnail,
+        "duration": None if image_mode else info.get("duration"),
         "channel": info.get("channel") or info.get("uploader") or platform,
         "platform": platform,
+        "media_type": "image" if image_mode else "video",
+        "image_count": len(photo_entries) if image_mode else 0,
         "qualities": qualities,
-        "original_quality": platform in {"WeChat", "Dcard"},
-        "subtitles": subtitle_tracks(info),
-        "playlist": playlist,
+        "original_quality": (not image_mode) and platform in {"WeChat", "Dcard"},
+        "subtitles": [] if image_mode else subtitle_tracks(info),
+        "playlist": None if image_mode else playlist,
     })
 
 
@@ -522,15 +632,17 @@ def download():
     subtitle_language = data.get("subtitle", "").strip()
 
     platform = platform_for_url(url)
-    if not platform or kind not in {"video", "audio", "subtitle"}:
+    if not platform or kind not in {"video", "audio", "subtitle", "image"}:
         return jsonify(error="下載參數無效"), 400
+    if kind == "image" and platform != "Instagram":
+        return jsonify(error="目前照片下載僅支援 Instagram 公開貼文"), 400
     if platform == "WeChat" and kind == "subtitle":
         return jsonify(error="微信視頻號未提供可下載字幕"), 400
     if kind == "video" and not (platform in {"WeChat", "Dcard"} and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
         return jsonify(error="畫質選項無效"), 400
     if kind == "subtitle" and not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", subtitle_language):
         return jsonify(error="字幕語言選項無效"), 400
-    if shutil.which("ffmpeg") is None:
+    if kind != "image" and shutil.which("ffmpeg") is None:
         return jsonify(error="系統尚未安裝 FFmpeg，請先依 README 完成安裝"), 503
     if CLOUD_MODE and shutil.disk_usage(tempfile.gettempdir()).free < 2 * MAX_DOWNLOAD_BYTES + 512 * 1024 * 1024:
         return jsonify(error="暫存空間不足，請稍後重試或降低畫質"), 507
@@ -548,7 +660,7 @@ def download():
         active_count = sum(job["status"] not in {"finished", "error", "cancelled"} for job in download_jobs.values())
         if existing_job_id is None and active_count >= MAX_ACTIVE_JOBS:
             shutil.rmtree(temp_dir, ignore_errors=True)
-            return jsonify(error="目前有影片正在處理，請完成或停止後再試"), 429
+            return jsonify(error="目前有檔案正在處理，請完成或停止後再試"), 429
         if existing_job_id is None:
             download_jobs[job_id] = {
                 "status": "queued",
@@ -632,7 +744,7 @@ def download_file(job_id: str):
         if job is None:
             return jsonify(error="找不到下載檔案，可能已逾時"), 404
         if job["status"] != "finished":
-            return jsonify(error="影片仍在處理中"), 409
+            return jsonify(error="檔案仍在處理中"), 409
         result = job["result"]
         filename = job["filename"]
 
