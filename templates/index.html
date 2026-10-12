@@ -107,21 +107,22 @@
 
       <form id="lookup-form" class="url-row">
         <span class="link-icon" aria-hidden="true">↗</span>
-        <input id="url" type="url" required autocomplete="off" placeholder="貼上影音網址…" aria-label="影音網址">
-        <button id="lookup-button" type="submit">解析影片 <span>→</span></button>
+        <input id="url" type="url" required autocomplete="off" placeholder="貼上影音／照片網址…" aria-label="影音或照片網址">
+        <button id="lookup-button" type="submit">解析內容 <span>→</span></button>
       </form>
       <div id="message" class="message" role="alert"></div>
 
       <div id="result" class="result" hidden>
         <div class="media-card">
-          <div class="thumb-wrap"><img id="thumbnail" alt="影片縮圖"><span id="duration" class="duration"></span></div>
+          <div class="thumb-wrap"><img id="thumbnail" alt="內容縮圖"><span id="duration" class="duration"></span></div>
           <div class="media-meta"><span id="channel"></span><h2 id="title"></h2></div>
         </div>
 
         <div id="download-form">
           <div class="type-tabs" role="tablist">
-            <button class="type-tab active" type="button" data-type="video"><span>▣</span> 影片 MP4</button>
-            <button class="type-tab" type="button" data-type="audio"><span>♫</span> 音訊 MP3</button>
+            <button id="video-tab" class="type-tab active" type="button" data-type="video"><span>▣</span> 影片 MP4</button>
+            <button id="audio-tab" class="type-tab" type="button" data-type="audio"><span>♫</span> 音訊 MP3</button>
+            <button id="image-tab" class="type-tab" type="button" data-type="image" hidden><span>▧</span> 照片</button>
             <button id="subtitle-tab" class="type-tab" type="button" data-type="subtitle" hidden><span>CC</span> CC 字幕</button>
           </div>
           <input id="download-url" name="url" type="hidden"><input id="download-type" name="type" value="video" type="hidden">
