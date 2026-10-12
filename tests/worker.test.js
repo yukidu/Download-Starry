@@ -3,22 +3,19 @@ import assert from 'node:assert/strict';
 import {authorize, allowedRoute, handleRequest, digest} from '../cloudflare/access.js';
 
 const password = 'test-only-password-123456789';
-const authorization = `Basic ${btoa(`samuel:${password}`)}`;
-const env = {AUTH_USER: 'samuel', AUTH_PASSWORD: password};
+const env = {AUTH_PASSWORD: password};
 const req = (path = '/', options = {}) => new Request(`https://video.example${path}`, options);
 
-test('missing secrets fail closed without starting any container', async () => {
+test('missing internal secret fails closed without starting any container', async () => {
   assert.equal((await handleRequest(req(), {})).status, 503);
 });
-test('anonymous and malformed credentials are rejected before container access', async () => {
-  for (const header of ['', 'Basic %%%', `Basic ${btoa('samuel:wrong')}`]) {
-    assert.equal((await authorize(req('/', {headers: {Authorization: header}}), env)).status, 401);
-  }
+test('anonymous access is allowed and visitor credentials are ignored', async () => {
+  assert.equal(await authorize(req(), env), null);
+  assert.equal(await authorize(req('/', {headers: {Authorization: 'Basic %%%'}}), env), null);
 });
-test('correct login works and cross-site state changes are blocked', async () => {
-  assert.equal(await authorize(req('/', {headers: {Authorization: authorization}}), env), null);
+test('cross-site state changes are still blocked', async () => {
   const crossSite = req('/api/download', {method: 'POST', headers: {
-    Authorization: authorization, Origin: 'https://other.example',
+    Origin: 'https://other.example',
   }});
   assert.equal((await authorize(crossSite, env)).status, 403);
 });
@@ -27,7 +24,7 @@ test('desktop control routes and unsupported methods are not exposed', () => {
   assert.equal(allowedRoute('/api/download', 'DELETE'), false);
   assert.equal(allowedRoute('/api/download/' + 'a'.repeat(32) + '/file', 'GET'), true);
 });
-test('forwarding uses one stable instance, replaces spoofed tokens and streams files', async () => {
+test('anonymous forwarding uses one stable instance, replaces spoofed tokens and streams files', async () => {
   let upstream;
   const backend = {...env, DOWNLOADER: {getByName(name) {
     assert.equal(name, 'personal-downloader');
@@ -37,7 +34,7 @@ test('forwarding uses one stable instance, replaces spoofed tokens and streams f
     }};
   }}};
   const response = await handleRequest(req('/api/download/' + 'a'.repeat(32) + '/file', {headers: {
-    Authorization: authorization, 'X-Backend-Token': 'spoof', Cookie: 'private=cookie', Range: 'bytes=0-9',
+    Authorization: 'Basic ignored-by-public-site', 'X-Backend-Token': 'spoof', Cookie: 'private=cookie', Range: 'bytes=0-9',
   }}), backend);
   assert.equal(upstream.headers.get('X-Backend-Token'), await digest(`backend:${password}`));
   assert.equal(upstream.headers.get('Authorization'), null);
@@ -49,7 +46,7 @@ test('forwarding uses one stable instance, replaces spoofed tokens and streams f
 });
 test('container startup failure returns a retryable error', async () => {
   const broken = {...env, DOWNLOADER: {getByName() {return {fetch() {throw new Error('internal detail');}};}}};
-  const response = await handleRequest(req('/', {headers: {Authorization: authorization}}), broken);
+  const response = await handleRequest(req('/'), broken);
   assert.equal(response.status, 503);
   assert.doesNotMatch(await response.text(), /internal detail/);
 });
@@ -59,11 +56,11 @@ test('transient static resource failures retry without duplicating download POST
     calls++;
     return calls === 1 ? new Response('starting', {status: 503}) : new Response('/* css */');
   }};}}};
-  const response = await handleRequest(req('/static/style.css', {headers: {Authorization: authorization}}), backend);
+  const response = await handleRequest(req('/static/style.css'), backend);
   assert.equal(response.status, 200);
   assert.equal(calls, 2);
   calls = 0;
-  const post = await handleRequest(req('/api/download', {method: 'POST', headers: {Authorization: authorization}, body: 'url=test'}), backend);
+  const post = await handleRequest(req('/api/download', {method: 'POST', body: 'url=test'}), backend);
   assert.equal(post.status, 503);
   assert.equal(calls, 1);
 });
