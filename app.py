@@ -16,6 +16,7 @@ from threading import Event, Lock
 from urllib.parse import parse_qs, urlparse
 
 from flask import Flask, jsonify, render_template, request, send_file
+import facebook_gallery
 import wechat
 try:
     from yt_dlp import YoutubeDL
@@ -89,6 +90,7 @@ SUPPORTED_HOSTS = {
 }
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
+ORIGINAL_VIDEO_PLATFORMS = {"WeChat", "Dcard", "乾淨世界", "Odysee"}
 
 
 def platform_for_url(value: str) -> str | None:
@@ -183,6 +185,25 @@ def instagram_photo_entries(info: dict) -> list[dict]:
     return [entry for entry in entries if best_thumbnail_url(entry)]
 
 
+def facebook_photo_payload(url: str) -> dict:
+    gallery = facebook_gallery.probe(url)
+    return {
+        "title": gallery["title"],
+        "thumbnail": gallery["thumbnail"],
+        "duration": None,
+        "channel": "Facebook",
+        "platform": "Facebook",
+        "media_type": "image",
+        "image_count": gallery["image_count"],
+        "image_count_truncated": bool(gallery.get("image_count_truncated")),
+        "qualities": [],
+        "highest_quality": None,
+        "original_quality": False,
+        "subtitles": [],
+        "playlist": None,
+    }
+
+
 def update_job(job_id: str, **changes) -> None:
     with download_jobs_lock:
         job = download_jobs.get(job_id)
@@ -271,7 +292,7 @@ def download_worker(
                 eta=data.get("eta"),
                 message=(
                     "正在下載字幕" if kind == "subtitle"
-                    else "正在下載照片" if kind == "image"
+                    else f"正在下載 {platform} 照片" if kind == "image"
                     else "正在下載影片資料"
                 ),
             )
@@ -322,7 +343,7 @@ def download_worker(
         "progress_hooks": [progress_hook],
         "postprocessor_hooks": [postprocessor_hook],
     }
-    if kind == "image":
+    if kind == "image" and platform != "Facebook":
         options.update({
             "skip_download": True,
             "writethumbnail": True,
@@ -350,10 +371,13 @@ def download_worker(
                 "preferredquality": "192",
             }],
         })
-    elif platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"}:
-        # These platforms expose or resolve a preferred original/public source.
-        # WeChat may additionally need its encrypted prefix restored below.
+    elif platform in ORIGINAL_VIDEO_PLATFORMS:
         options["format"] = "best"
+    elif quality == "best":
+        options.update({
+            "format": "bestvideo+bestaudio/best",
+            "merge_output_format": "mp4",
+        })
     else:
         height = int(quality)
         options.update({
@@ -369,15 +393,41 @@ def download_worker(
             job_id,
             status="downloading",
             progress=0,
-            message="正在連線至 Instagram 照片" if kind == "image" else "正在連線至影片平台",
+            message=f"正在連線至 {platform} 照片" if kind == "image" else "正在連線至影片平台",
         )
         wechat_info = None
-        with YoutubeDL(options) as ydl:
-            if platform == "WeChat":
-                wechat_info = wechat.resolve(url)
-                info = ydl.process_ie_result(wechat_info, download=True)
-            else:
-                info = ydl.extract_info(url, download=True)
+        if kind == "image" and platform == "Facebook":
+            def facebook_progress(total_bytes: int, image_count: int) -> None:
+                if cancellation_requested():
+                    return
+                update_job(
+                    job_id,
+                    status="downloading",
+                    progress=min(90, 8 + image_count * 3),
+                    downloaded_bytes=total_bytes,
+                    total_bytes=0,
+                    speed=None,
+                    eta=None,
+                    message=f"正在下載 Facebook 照片（已取得 {image_count} 張）" if image_count else "正在讀取 Facebook 照片",
+                )
+
+            try:
+                info = facebook_gallery.download(
+                    url,
+                    temp_dir,
+                    cancelled=cancellation_requested,
+                    progress=facebook_progress,
+                    max_bytes=MAX_DOWNLOAD_BYTES,
+                )
+            except facebook_gallery.FacebookGalleryCancelled as exc:
+                raise DownloadCancelled(str(exc)) from exc
+        else:
+            with YoutubeDL(options) as ydl:
+                if platform == "WeChat":
+                    wechat_info = wechat.resolve(url)
+                    info = ydl.process_ie_result(wechat_info, download=True)
+                else:
+                    info = ydl.extract_info(url, download=True)
         if cancellation_requested():
             cancel_event.set()
             raise DownloadCancelled("下載已由使用者停止")
@@ -435,14 +485,15 @@ def download_worker(
                 progress=97,
                 speed=None,
                 eta=None,
-                message="正在整理 Instagram 照片",
+                message=f"正在整理 {platform} 照片",
             )
             image_candidates = sorted(
-                path for path in Path(temp_dir).iterdir()
+                path for path in Path(temp_dir).rglob("*")
                 if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
             )
+            missing_code = "FACEBOOK_IMAGE_MISSING" if platform == "Facebook" else "INSTAGRAM_IMAGE_MISSING"
             if not image_candidates:
-                raise DownloadError("INSTAGRAM_IMAGE_MISSING")
+                raise DownloadError(missing_code)
             image_count = len(image_candidates)
             total_image_bytes = sum(path.stat().st_size for path in image_candidates)
             if MAX_DOWNLOAD_BYTES and total_image_bytes > MAX_DOWNLOAD_BYTES:
@@ -450,7 +501,8 @@ def download_worker(
             if image_count == 1:
                 result = image_candidates[0]
             else:
-                result = Path(temp_dir) / "instagram-photos.zip"
+                archive_name = "facebook-photos.zip" if platform == "Facebook" else "instagram-photos.zip"
+                result = Path(temp_dir) / archive_name
                 with zipfile.ZipFile(result, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                     digits = len(str(image_count))
                     for index, path in enumerate(image_candidates, start=1):
@@ -500,11 +552,15 @@ def download_worker(
         if isinstance(exc, wechat.WeChatError):
             error_message = str(exc)
         elif "CLOUD_SIZE_LIMIT" in error_detail:
-            error_message = "檔案超過此服務的單次大小限制，請降低畫質或使用本機版"
+            error_message = "檔案超過此服務的單次大小限制，請改用較短的內容或本機版"
+        elif "FACEBOOK_IMAGE_MISSING" in error_detail:
+            error_message = "找不到可下載的 Facebook 公開照片。該內容可能需要登入、已刪除或 Facebook 暫時限制匿名讀取"
+        elif "FACEBOOK_GALLERY_COMPONENT_MISSING" in error_detail:
+            error_message = "Facebook 照片下載元件尚未就緒，請稍後再試"
         elif "INSTAGRAM_IMAGE_MISSING" in error_detail:
             error_message = "找不到可下載的 Instagram 照片。內容可能需要登入、已刪除或暫時無法公開讀取"
         elif "RemoteDisconnected" in error_detail or "Connection aborted" in error_detail:
-            error_message = "影音平台中斷連線，自動續傳與重試後仍未完成。請稍後再試或降低畫質"
+            error_message = "影音平台中斷連線，自動續傳與重試後仍未完成。請稍後再試"
         else:
             error_message = "下載失敗。請確認內容可公開瀏覽且不需要登入，或稍後再試"
         app.logger.exception(
@@ -538,6 +594,13 @@ def video_info():
     if not platform:
         return jsonify(error="請輸入支援平台的公開影音或照片分享網址"), 400
 
+    if platform == "Facebook" and facebook_gallery.looks_like_photo_or_album_url(url):
+        try:
+            return jsonify(facebook_photo_payload(url))
+        except facebook_gallery.FacebookGalleryError as exc:
+            app.logger.warning("Facebook photo metadata failed: detail=%s", exc)
+            return jsonify(error="無法讀取 Facebook 公開照片／相簿。該內容可能需要登入、已刪除，或 Facebook 暫時限制匿名讀取"), 422
+
     try:
         if platform == "WeChat":
             info = wechat.resolve(url)
@@ -554,9 +617,20 @@ def video_info():
         return jsonify(error=str(exc)), 422
     except DownloadError as exc:
         app.logger.warning("Metadata failed: platform=%s detail=%s", platform, exc)
+        if platform == "Facebook" and facebook_gallery.may_contain_photos_url(url):
+            try:
+                return jsonify(facebook_photo_payload(url))
+            except facebook_gallery.FacebookGalleryError as gallery_exc:
+                app.logger.warning("Facebook photo fallback failed: detail=%s", gallery_exc)
         if platform == "Instagram" and "empty media response" in str(exc).lower():
             return jsonify(error="Instagram 解析元件需要更新。請關閉程式並重新執行 start.bat；若更新後仍失敗，該內容可能需要登入"), 422
         return jsonify(error="無法讀取內容。內容可能設為私人、需要登入、受地區限制或網址無效"), 422
+
+    if platform == "Facebook" and not any(entry_has_video(entry) for entry in info_entries(info)) and facebook_gallery.may_contain_photos_url(url):
+        try:
+            return jsonify(facebook_photo_payload(url))
+        except facebook_gallery.FacebookGalleryError as exc:
+            app.logger.warning("Facebook non-video photo fallback failed: detail=%s", exc)
 
     photo_entries = instagram_photo_entries(info) if platform == "Instagram" else []
     image_mode = bool(photo_entries)
@@ -568,6 +642,7 @@ def video_info():
         if f.get("height") and f.get("vcodec") != "none"
     }, reverse=True)
     qualities = [h for h in heights if h <= 4320]
+    highest_quality = qualities[0] if qualities else None
     playlist = None
     playlist_id = youtube_playlist_id(url)
     if playlist_id:
@@ -608,6 +683,7 @@ def video_info():
     thumbnail = info.get("thumbnail")
     if image_mode and not thumbnail:
         thumbnail = best_thumbnail_url(photo_entries[0])
+    original_quality = (not image_mode) and platform in ORIGINAL_VIDEO_PLATFORMS
 
     return jsonify({
         "title": info.get("title") or ("Instagram 照片" if image_mode else "未命名影片"),
@@ -617,8 +693,10 @@ def video_info():
         "platform": platform,
         "media_type": "image" if image_mode else "video",
         "image_count": len(photo_entries) if image_mode else 0,
-        "qualities": qualities,
-        "original_quality": (not image_mode) and platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"},
+        "image_count_truncated": False,
+        "qualities": qualities[:1],
+        "highest_quality": "original" if original_quality else highest_quality,
+        "original_quality": original_quality,
         "subtitles": [] if image_mode else subtitle_tracks(info),
         "playlist": None if image_mode else playlist,
     })
@@ -630,24 +708,28 @@ def download():
     data = request.form
     url = data.get("url", "").strip()
     kind = data.get("type", "video")
-    quality = data.get("quality", "720")
+    quality = data.get("quality", "best")
     subtitle_language = data.get("subtitle", "").strip()
 
     platform = platform_for_url(url)
     if not platform or kind not in {"video", "audio", "subtitle", "image"}:
         return jsonify(error="下載參數無效"), 400
-    if kind == "image" and platform != "Instagram":
-        return jsonify(error="目前照片下載僅支援 Instagram 公開貼文"), 400
+    if kind == "image":
+        facebook_photo_request = platform == "Facebook" and facebook_gallery.may_contain_photos_url(url)
+        if platform != "Instagram" and not facebook_photo_request:
+            return jsonify(error="目前照片下載支援 Instagram 公開貼文，以及 Facebook 公開照片／相簿"), 400
     if platform == "WeChat" and kind == "subtitle":
         return jsonify(error="微信視頻號未提供可下載字幕"), 400
-    if kind == "video" and not (platform in {"WeChat", "Dcard", "乾淨世界", "Odysee"} and quality == "original") and (not quality.isdigit() or not 144 <= int(quality) <= 4320):
+    original_quality = platform in ORIGINAL_VIDEO_PLATFORMS and quality == "original"
+    numeric_quality = quality.isdigit() and 144 <= int(quality) <= 4320
+    if kind == "video" and quality != "best" and not original_quality and not numeric_quality:
         return jsonify(error="畫質選項無效"), 400
     if kind == "subtitle" and not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", subtitle_language):
         return jsonify(error="字幕語言選項無效"), 400
     if kind != "image" and shutil.which("ffmpeg") is None:
         return jsonify(error="系統尚未安裝 FFmpeg，請先依 README 完成安裝"), 503
     if CLOUD_MODE and shutil.disk_usage(tempfile.gettempdir()).free < 2 * MAX_DOWNLOAD_BYTES + 512 * 1024 * 1024:
-        return jsonify(error="暫存空間不足，請稍後重試或降低畫質"), 507
+        return jsonify(error="暫存空間不足，請稍後重試"), 507
 
     request_key = (url, kind, quality, subtitle_language)
     temp_dir = tempfile.mkdtemp(prefix="video_web_")
