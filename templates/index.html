@@ -14,6 +14,22 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='compact.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='provider-ui.css') }}">
+  <style>
+    .download-action-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    @media (max-width: 560px) {
+      .download-action-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px;
+      }
+      .download-action-grid .download-button {
+        padding-left: 8px;
+        padding-right: 8px;
+        font-size: 15px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="cosmic-scene" aria-hidden="true">
@@ -147,8 +163,8 @@
               <strong id="highest-quality-label">最高畫質</strong>
             </div>
             <div class="download-action-grid">
-              <button id="download-video-button" class="download-button download-action-button" type="button" data-download-type="video"><span>↓</span> 下載 MP4</button>
-              <button id="download-audio-button" class="download-button download-action-button" type="button" data-download-type="audio"><span>♫</span> 下載 MP3</button>
+              <button id="download-video-button" class="download-button download-action-button" type="button" data-download-type="video"><span>↓</span> 下載影片</button>
+              <button id="download-audio-button" class="download-button download-action-button" type="button" data-download-type="audio"><span>♫</span> 下載音檔</button>
             </div>
           </div>
 
@@ -185,6 +201,56 @@
   {% endif %}
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    (() => {
+      const form = document.getElementById('lookup-form');
+      const urlInput = document.getElementById('url');
+      const pasteButton = document.getElementById('paste-url-button');
+      const lookupButton = document.getElementById('lookup-button');
+      const videoButton = document.getElementById('download-video-button');
+      const audioButton = document.getElementById('download-audio-button');
+
+      const requestLookup = () => {
+        if (!form || !urlInput || !lookupButton) return;
+        if (!urlInput.value.trim() || urlInput.disabled || lookupButton.disabled) return;
+        if (typeof form.requestSubmit === 'function') form.requestSubmit(lookupButton);
+        else lookupButton.click();
+      };
+
+      urlInput?.addEventListener('paste', () => {
+        setTimeout(requestLookup, 0);
+      });
+
+      pasteButton?.addEventListener('click', () => {
+        const handleClipboardFill = () => {
+          urlInput.removeEventListener('input', handleClipboardFill);
+          setTimeout(requestLookup, 0);
+        };
+        urlInput.addEventListener('input', handleClipboardFill);
+        setTimeout(() => urlInput.removeEventListener('input', handleClipboardFill), 5000);
+      });
+
+      const syncDownloadLabels = () => {
+        const replacements = [
+          [videoButton, '下載 MP4', '下載影片'],
+          [videoButton, 'MP4 已送出', '影片已送出'],
+          [audioButton, '下載 MP3', '下載音檔'],
+          [audioButton, 'MP3 已送出', '音檔已送出'],
+        ];
+        replacements.forEach(([button, from, to]) => {
+          if (!button || !button.innerHTML.includes(from)) return;
+          const next = button.innerHTML.replace(from, to);
+          if (next !== button.innerHTML) button.innerHTML = next;
+        });
+      };
+
+      syncDownloadLabels();
+      [videoButton, audioButton].forEach(button => {
+        if (!button) return;
+        new MutationObserver(syncDownloadLabels).observe(button, {childList: true, subtree: true, characterData: true});
+      });
+    })();
+  </script>
   <script src="{{ url_for('static', filename='provider-ui.js') }}"></script>
   <script src="{{ url_for('static', filename='ui.js') }}"></script>
   {% if not cloud_mode %}
