@@ -37,6 +37,7 @@ SaveVideo 是 Flask + 原生 JavaScript / HTML / CSS + Cloudflare Workers / Cont
 ## D. PWA 與 Service Worker
 
 - manifest、Service Worker、offline fallback、App icon 保留。
+- `theme-color`、iOS standalone / status-bar meta 保留。
 - `/api/*` 永遠不由 Service Worker 快取。
 - 影片、音檔、照片 ZIP、字幕下載不由 Service Worker 快取。
 - Service Worker 不再攔截每支 JS / CSS，也不做 stale-while-revalidate 背景重抓。
@@ -63,7 +64,7 @@ SaveVideo 是 Flask + 原生 JavaScript / HTML / CSS + Cloudflare Workers / Cont
 
 - Capacitor-ready 前首頁 JS：62,596 bytes（約 62.6 KB）。
 - 第一版架構升級後：73,550 bytes（約 73.6 KB，+17.5%），不符合效能目標，因此已再精簡。
-- 本輪修正後首頁 JS：68,817 bytes（約 68.8 KB，+9.94%）。
+- 本輪修正後首頁 JS：68,829 bytes（約 68.8 KB，+9.96%）。
 - 首頁 CSS：35,899 bytes（約 35.9 KB），前後不變。
 - 新增 production dependency：0。
 - Capacitor / Firebase / Native Plugin：0。
