@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Noto+Sans+TC:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='compact.css') }}">
 </head>
 <body>
   <div class="cosmic-scene" aria-hidden="true">
@@ -75,8 +76,7 @@
   </header>
 
   <main>
-    <section class="hero" aria-labelledby="page-title">
-      <h1 id="page-title">繁星回憶<span>（串流影音下載）</span></h1>
+    <section class="hero" aria-label="支援的平台">
       <div class="platform-icons" aria-label="支援的平台">
         <span class="platform-icon platform-youtube" title="YouTube" aria-label="YouTube">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.6.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2 12a29 29 0 0 0 .4 4.8 2.8 2.8 0 0 0 2 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22 12a29 29 0 0 0-.4-4.8Z" fill="currentColor"/><path d="m10 15.3 5-3.3-5-3.3v6.6Z" fill="white"/></svg>
@@ -94,6 +94,17 @@
     </section>
 
     <section class="downloader" aria-label="下載工具">
+      <div id="download-progress" class="download-progress top-download-progress" hidden aria-live="polite">
+        <div class="progress-heading">
+          <span id="progress-status">準備下載</span>
+          <div class="progress-actions"><strong id="progress-percent">0%</strong><button id="stop-download" class="stop-download" type="button" hidden>■ 停止下載</button></div>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div class="progress-detail"><span id="progress-size"></span><span id="progress-speed"></span><span id="progress-eta"></span></div>
+      </div>
+
       <form id="lookup-form" class="url-row">
         <span class="link-icon" aria-hidden="true">↗</span>
         <input id="url" type="url" required autocomplete="off" placeholder="貼上影音網址…" aria-label="影音網址">
@@ -118,16 +129,6 @@
           <div id="audio-note" class="audio-note" hidden><span>♫</span><div><strong>MP3 音訊</strong></div></div>
           <label id="subtitle-group" hidden>選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
           <button id="download-button" class="download-button" type="button"><span>↓</span> 開始下載</button>
-          <div id="download-progress" class="download-progress" hidden aria-live="polite">
-            <div class="progress-heading">
-              <span id="progress-status">準備下載</span>
-              <div class="progress-actions"><strong id="progress-percent">0%</strong><button id="stop-download" class="stop-download" type="button" hidden>■ 停止下載</button></div>
-            </div>
-            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div id="progress-bar" class="progress-bar"></div>
-            </div>
-            <div class="progress-detail"><span id="progress-size"></span><span id="progress-speed"></span><span id="progress-eta"></span></div>
-          </div>
         </div>
       </div>
     </section>
