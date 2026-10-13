@@ -17,6 +17,7 @@
     "destination_address": "yukidu@gmail.com"
   }],
   "containers": [{
+    "name": "savevideo-videodownloader",
     "class_name": "VideoDownloader",
     "image": "./Dockerfile",
     "instance_type": "basic",
