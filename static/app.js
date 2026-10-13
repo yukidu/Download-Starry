@@ -1,32 +1,11 @@
 'use strict';
 (() => {
   const head = document.head;
-  const ICON_URL = '/static/app-icon.svg?v=4';
-  document.title = '繁星下載（串流影音下載）';
-  document.querySelector('.site-brand-text')?.replaceChildren('繁星下載');
-
   const brandMark = document.querySelector('.site-brand-mark');
   if (brandMark) {
-    const logo = document.createElement('img');
-    logo.src = ICON_URL;
-    logo.alt = '';
-    logo.width = 42;
-    logo.height = 42;
-    logo.style.cssText = 'display:block;width:100%;height:100%;border-radius:inherit';
-    brandMark.replaceChildren(logo);
-    brandMark.style.background = 'transparent';
-    brandMark.style.boxShadow = 'none';
-    brandMark.style.overflow = 'hidden';
+    brandMark.replaceChildren();
+    brandMark.style.cssText += ';background:url(/static/app-icon.svg?v=4) center/cover;box-shadow:none';
   }
-
-  let favicon = document.querySelector('link[rel="icon"]');
-  if (!favicon) {
-    favicon = document.createElement('link');
-    favicon.rel = 'icon';
-    head.appendChild(favicon);
-  }
-  favicon.href = ICON_URL;
-  favicon.type = 'image/svg+xml';
 
   head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0b1026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
 
