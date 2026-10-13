@@ -48,12 +48,17 @@ test('通知權限透過 platform layer，保留 Web First 與 Capacitor-ready',
   assert.match(ui, /window\.SaveVideoNative\?\.notifications\?\.ensurePushSubscription/);
 });
 
-test('Android Chrome 若通知被封鎖會提供網站權限指引', async () => {
+test('Android 通知被封鎖時依一般 Chrome 或已安裝 PWA 顯示不同指引', async () => {
   const ui = await read('static/repair-notifications.js');
+  assert.match(ui, /runtime\.isAndroid && runtime\.isPWA/);
+  assert.match(ui, /mode: 'android-pwa'/);
+  assert.match(ui, /長按「繁星下載」圖示/);
+  assert.match(ui, /應用程式資訊/);
+  assert.match(ui, /Chrome → 設定 → 網站設定 → 通知/);
+  assert.match(ui, /mode: 'android-browser'/);
   assert.match(ui, /Chrome 網址列左側/);
-  assert.match(ui, /通知已被瀏覽器封鎖/);
-  assert.match(ui, /Android Chrome 不需要先安裝到桌面/);
-  assert.match(ui, /再按一次「修復後通知我」/);
+  assert.match(ui, /Android Chrome 一般瀏覽器不需要先安裝到桌面/);
+  assert.match(ui, /設定完成，重新檢查/);
 });
 
 test('iPhone iPad 未加入主畫面時不假裝能強制安裝', async () => {
