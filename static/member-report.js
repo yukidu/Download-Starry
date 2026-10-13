@@ -1,8 +1,9 @@
 'use strict';
 (() => {
   if (window.DownloadStarryReportUI) return;
-  const platform = window.SaveVideoPlatform;
-  const api = window.SaveVideoAPI;
+  const platform = window.DownloadStarryMemberPlatform;
+  const api = window.DownloadStarryMemberAPI;
+  if (!platform || !api) throw new Error('Download Starry member bootstrap missing');
   const PENDING_KEY = 'downloadstarry.pending-report.v1';
   let sessionCache;
   let dialog;
@@ -31,7 +32,7 @@
     dialog.querySelector('.dsr-close').onclick = () => dialog.close?.() || dialog.removeAttribute('open');
     dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close?.(); });
     dialog.querySelector('#dsr-logout').onclick = async () => {
-      await api.memberLogout();
+      await api.logout();
       sessionCache = null;
       dialog.close?.();
       location.reload();
@@ -49,12 +50,12 @@
 
   async function session() {
     if (sessionCache !== undefined) return sessionCache;
-    sessionCache = await api.memberSession().catch(() => null);
+    sessionCache = await api.session().catch(() => null);
     return sessionCache;
   }
 
   function savePending(value) {
-    platform.storage.session.set(PENDING_KEY, JSON.stringify(value));
+    platform.session.set(PENDING_KEY, JSON.stringify(value));
   }
 
   function loginFor(value) {
@@ -176,8 +177,8 @@
     history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
     if (state !== 'login') { alert('Starry ID 登入沒有完成，請再試一次。'); return; }
     let pending = null;
-    try { pending = JSON.parse(platform.storage.session.get(PENDING_KEY) || 'null'); } catch (_) {}
-    platform.storage.session.remove(PENDING_KEY);
+    try { pending = JSON.parse(platform.session.get(PENDING_KEY) || 'null'); } catch (_) {}
+    platform.session.remove(PENDING_KEY);
     sessionCache = undefined;
     if (pending?.mode === 'report') await open(pending);
     else await account();
