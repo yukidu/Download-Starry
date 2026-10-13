@@ -10,10 +10,13 @@
   }
   let isCapacitor = platform !== 'web';
   try { if (capacitor?.isNativePlatform) isCapacitor = Boolean(capacitor.isNativePlatform()); } catch (_) {}
+  const ua = navigator.userAgent || '';
+  const webIOS = !isCapacitor && (/iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const webAndroid = !isCapacitor && /Android/i.test(ua);
   const isStandalone = Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true);
   const runtime = Object.freeze({
     platform, isCapacitor, isWeb: !isCapacitor,
-    isAndroid: platform === 'android', isIOS: platform === 'ios',
+    isAndroid: platform === 'android' || webAndroid, isIOS: platform === 'ios' || webIOS,
     isStandalone, isPWA: !isCapacitor && isStandalone,
   });
 
