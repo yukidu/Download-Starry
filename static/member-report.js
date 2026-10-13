@@ -8,7 +8,7 @@
   let sessionCache;
   let pageRoot;
 
-  const h = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]));
+  const h = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const localDateTime = value => {
     const d = value ? new Date(value) : new Date();
     if (Number.isNaN(d.getTime())) return '';
