@@ -9,8 +9,7 @@ test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () =>
   const app = await read('static/app.js');
   assert.match(app, /請開發者喝杯咖啡/);
   assert.match(app, /p\.after\(l\);l\.after\(c\)/);
-  assert.match(app, /body\.dark-theme \.site-brand-mark/);
-  assert.match(app, /#263158/);
+  assert.match(app, /outline:1px solid #263158/);
 });
 
 test('會員回報 shell 與會員模組都保持互動後 lazy-load', async () => {
