@@ -5,26 +5,28 @@ import {handleStarryRequest} from '../cloudflare/starry.js';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('首頁依需求調整 CTA、網址按鈕順序與無法下載入口', async () => {
+test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () => {
   const app = await read('static/app.js');
   assert.match(app, /請開發者喝杯咖啡/);
   assert.match(app, /p\.after\(l\);l\.after\(c\)/);
-  assert.match(app, /report-download-button/);
-  assert.match(app, /無法下載/);
-  assert.match(app, /menu-report-button/);
-  assert.match(app, /回報無法下載/);
-  assert.match(app, /Starry ID 登入/);
   assert.match(app, /body\.dark-theme \.site-brand-mark/);
   assert.match(app, /#263158/);
 });
 
-test('會員回報、會員 API、會員 platform 都保持 lazy-load', async () => {
+test('會員回報 shell 與會員模組都保持互動後 lazy-load', async () => {
   const app = await read('static/app.js');
+  const shell = await read('static/member-shell.js');
   const sourceList = app.match(/const sources=\[([^\]]+)\]/s)?.[1] || '';
-  for (const file of ['member-report.js','member-api.js','member-platform.js']) {
-    assert.doesNotMatch(sourceList, new RegExp(file.replace('.', '\\.')));
-    assert.match(app, new RegExp(`load\\('/static/${file.replace('.', '\\.')}\\'\\)`));
-  }
+  assert.doesNotMatch(sourceList, /member-shell\.js|member-report\.js|member-api\.js|member-platform\.js/);
+  assert.match(app, /load\('\/static\/member-shell\.js'\)/);
+  assert.match(app, /menu-toggle/);
+  assert.match(app, /lookup-form/);
+  assert.match(shell, /report-download-button/);
+  assert.match(shell, /無法下載/);
+  assert.match(shell, /menu-report-button/);
+  assert.match(shell, /回報無法下載/);
+  assert.match(shell, /Starry ID 登入/);
+  for (const file of ['member-report.js','member-api.js','member-platform.js']) assert.match(shell, new RegExp(`/static/${file.replace('.', '\\.')}`));
 });
 
 test('Starry ID 使用 lazy platform auth/session storage，不把會員 token 放 localStorage', async () => {
