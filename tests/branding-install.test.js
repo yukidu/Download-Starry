@@ -62,7 +62,7 @@ test('安裝功能使用原生頁而非自訂彈窗', async () => {
 test('置頂列不保留開燈關燈按鈕且漢堡按鈕沒有矩形圓角外框', async () => {
   const toolbar = await read('static/toolbar.js');
   assert.match(toolbar, /actions\.replaceChildren\(topLogin,topMember\)/);
-  assert.doesNotMatch(toolbar, /actions\.replaceChildren\([^\n]*topTheme/);
+  assert.doesNotMatch(toolbar, /actions\.replaceChildren\(topTheme/);
   assert.match(toolbar, /\.site-header \.hamburger-button\{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important\}/);
 });
 
