@@ -1,13 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="繁星下載">
   <defs>
-    <linearGradient id="bg" x1="72" y1="60" x2="440" y2="456" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6d5dfc"/>
-      <stop offset="0.55" stop-color="#493f91"/>
-      <stop offset="1" stop-color="#10294d"/>
+    <linearGradient id="bg" x1="72" y1="54" x2="438" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2f49d8"/>
+      <stop offset="0.58" stop-color="#2433a8"/>
+      <stop offset="1" stop-color="#101b58"/>
+    </linearGradient>
+    <linearGradient id="play" x1="214" y1="199" x2="318" y2="302" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#29c8ff"/>
+      <stop offset="1" stop-color="#315cff"/>
     </linearGradient>
   </defs>
+
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="132" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="18"/>
-  <path d="M220 177v158c0 20 22 32 39 21l111-78c16-11 16-35 0-46l-111-78c-17-12-39 1-39 23Z" fill="#fff"/>
-  <path d="m133 133 11 31 31 11-31 11-11 31-11-31-31-11 31-11 11-31Zm267 233 8 23 23 8-23 8-8 23-8-23-23-8 23-8 8-23Z" fill="#f8d477"/>
+
+  <path id="download-arrow" d="M218 112h76v151h55c16 0 25 19 14 31l-91 96c-9 10-25 10-34 0l-91-96c-11-12-2-31 14-31h57V112Z" fill="#fff"/>
+  <path id="download-tray" d="M145 368v28c0 13 10 23 23 23h176c13 0 23-10 23-23v-28" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+
+  <path id="play-mark" d="M229 210v88c0 13 14 21 25 14l66-44c10-7 10-22 0-29l-66-44c-11-7-25 1-25 15Z" fill="url(#play)"/>
+
+  <path id="star-mark" d="m381 102 9 25 25 9-25 9-9 25-9-25-25-9 25-9 9-25Z" fill="#ffd86b"/>
 </svg>
