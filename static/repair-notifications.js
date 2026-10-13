@@ -96,6 +96,14 @@
       return;
     }
 
+    const renameResolvedButtons = () => {
+      body.querySelectorAll('.dsr-status[data-status="resolved"]').forEach(button => {
+        if (button.textContent !== '已修復') button.textContent = '已修復';
+      });
+    };
+    renameResolvedButtons();
+    new MutationObserver(renameResolvedButtons).observe(body, {childList: true, subtree: true});
+
     const form = body.querySelector('#dsr-form');
     const actions = form?.querySelector('.dsr-actions');
     const message = body.querySelector('#dsr-message');
@@ -133,7 +141,7 @@
         await ensureSubscription();
         notifyRequested = true;
         renderNotify();
-        message.textContent = '已啟用。送出回報後，管理員標記「已解決」時會通知這支裝置。';
+        message.textContent = '已啟用。送出回報後，管理員標記「已修復」時會通知這支裝置。';
       } catch (error) {
         notifyRequested = false;
         renderNotify();
