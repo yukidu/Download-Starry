@@ -110,11 +110,18 @@ export async function handleDownloadHistoryRequest(request, env) {
   const userId = await sessionUserId(request, env);
   if (!userId) return json({error: '請先登入 Starry ID'}, 401);
   const rows = await env.STARRY_ID_DB.prepare(`
-    SELECT id,jobId,url,type,quality,subtitle,createdAt
-    FROM downloadstarry_history
-    WHERE userId = ?
+    SELECT id,jobId,url,type,quality,subtitle,createdAt,recordKind,status
+    FROM (
+      SELECT id,jobId,url,type,quality,subtitle,createdAt,'download' AS recordKind,'' AS status
+      FROM downloadstarry_history
+      WHERE userId = ?
+      UNION ALL
+      SELECT id,'' AS jobId,url,'report' AS type,'' AS quality,'' AS subtitle,createdAt,'report' AS recordKind,status
+      FROM downloadstarry_reports
+      WHERE userId = ? AND url <> ''
+    )
     ORDER BY createdAt DESC
     LIMIT 100
-  `).bind(userId).all();
+  `).bind(userId, userId).all();
   return json({history: rows?.results || []});
 }

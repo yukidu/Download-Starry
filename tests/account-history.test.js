@@ -36,6 +36,20 @@ test('下載紀錄有獨立頁面、API 與登入會員資料隔離', async () =
   assert.match(client, /最近 100 筆/);
 });
 
+test('下載紀錄同時顯示該會員的回報無法下載連結與狀態', async () => {
+  const [history, client] = await Promise.all([
+    read('cloudflare/history.js'),
+    read('static/download-history.js'),
+  ]);
+  assert.match(history, /downloadstarry_reports/);
+  assert.match(history, /'report' AS type/);
+  assert.match(history, /'report' AS recordKind/);
+  assert.match(history, /WHERE userId = \? AND url <> ''/);
+  assert.match(client, /report:'回報無法下載'/);
+  assert.match(client, /resolved:'已修復'/);
+  assert.match(client, /最近 100 筆下載與回報紀錄/);
+});
+
 test('登入後不再露出登入按鈕，無獎銜時隱藏第二行', async () => {
   const fix = await read('static/header-member-fix.js');
   assert.match(fix, /#top-login-button\[hidden\]/);

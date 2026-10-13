@@ -48,6 +48,70 @@
     modal.hidden = false;
   }
 
+  function permissionGuideContent(blocked) {
+    const runtime = platform?.runtime || {};
+    if (runtime.isAndroid && runtime.isPWA) {
+      return {
+        mode: 'android-pwa',
+        title: '請開啟繁星下載的通知權限',
+        copy: blocked
+          ? '你目前是從已安裝的繁星下載開啟，畫面沒有 Chrome 網址列。通知已被封鎖，請改從 Android 的 App 通知設定解除封鎖。'
+          : '你目前是從已安裝的繁星下載開啟。若系統沒有跳出允許通知視窗，請從 Android 的 App 通知設定確認權限。',
+        steps: [
+          '回到手機桌面，長按「繁星下載」圖示，點「應用程式資訊」或 ⓘ。',
+          '進入「通知」，開啟「允許通知」。',
+          '回到繁星下載，按下方「設定完成，重新檢查」。',
+          '若 App 資訊中找不到通知設定，再到 Chrome → 設定 → 網站設定 → 通知，確認 download.starry.phd 為允許。'
+        ],
+        foot: '已安裝 PWA 不需要再找網址列；系統會依目前執行模式顯示正確步驟。'
+      };
+    }
+    if (runtime.isIOS && runtime.isStandalone) {
+      return {
+        mode: 'ios-pwa',
+        title: '請開啟繁星下載的通知權限',
+        copy: blocked
+          ? '繁星下載的通知已被 iPhone／iPad 封鎖，請到系統設定重新允許。'
+          : '若沒有看到通知允許視窗，請到系統設定確認繁星下載的通知權限。',
+        steps: [
+          '打開 iPhone／iPad「設定」。',
+          '進入「通知」，找到「繁星下載」。',
+          '開啟「允許通知」。',
+          '回到繁星下載，按下方「設定完成，重新檢查」。'
+        ],
+        foot: 'iPhone／iPad 必須從已加入主畫面的繁星下載開啟，才能使用 Web Push。'
+      };
+    }
+    if (runtime.isAndroid) {
+      return {
+        mode: 'android-browser',
+        title: '請允許繁星下載傳送通知',
+        copy: blocked
+          ? '目前 Chrome 已封鎖這個網站的通知，因此系統不會再次跳出允許視窗。請先在網站權限中改成允許。'
+          : 'Chrome 這次沒有完成通知授權。若沒有看到系統允許視窗，請直接從網址列的網站權限開啟通知。',
+        steps: [
+          '點 Chrome 網址列左側的網站設定圖示、鎖頭或被劃線的鈴鐺。',
+          '找到「通知」，改成「允許」。',
+          '回到繁星下載，按下方「設定完成，重新檢查」。'
+        ],
+        foot: 'Android Chrome 一般瀏覽器不需要先安裝到桌面。'
+      };
+    }
+    return {
+      mode: 'browser',
+      title: '請允許繁星下載傳送通知',
+      copy: blocked
+        ? '瀏覽器已封鎖這個網站的通知。請到瀏覽器的網站權限或通知設定改成允許。'
+        : '這次沒有完成通知授權，請到瀏覽器的網站權限或通知設定開啟通知。',
+      steps: [
+        '打開目前瀏覽器的網站資訊或網站權限。',
+        '把「通知」改成「允許」。',
+        '回到繁星下載，按下方「設定完成，重新檢查」。'
+      ],
+      foot: '若瀏覽器已明確封鎖通知，網站基於安全限制無法自行解除。'
+    };
+  }
+
   function showPermissionGuide(blocked = false) {
     let modal = document.querySelector('#dsr-permission-guide');
     if (!modal) {
@@ -56,22 +120,25 @@
       modal.className = 'dsr-dialog-backdrop';
       modal.innerHTML = `
         <section class="dsr-dialog-card" role="dialog" aria-modal="true" aria-labelledby="dsr-permission-title">
-          <h2 id="dsr-permission-title">請允許繁星下載傳送通知</h2>
+          <h2 id="dsr-permission-title"></h2>
           <p id="dsr-permission-copy"></p>
-          <ol class="dsr-permission-steps">
-            <li>點 Chrome 網址列左側的網站設定圖示、鎖頭或被劃線的鈴鐺。</li>
-            <li>找到「通知」，改成「允許」。</li>
-            <li>回到繁星下載，再按一次「修復後通知我」。</li>
-          </ol>
-          <p>Android Chrome 不需要先安裝到桌面；只要網站通知權限設為允許即可。</p>
-          <div class="dsr-actions"><button id="dsr-permission-close" class="dsr-primary" type="button">知道了</button></div>
+          <ol id="dsr-permission-steps" class="dsr-permission-steps"></ol>
+          <p id="dsr-permission-foot"></p>
+          <div class="dsr-actions"><button id="dsr-permission-retry" class="dsr-primary" type="button">設定完成，重新檢查</button><button id="dsr-permission-close" class="dsr-secondary" type="button">稍後處理</button></div>
         </section>`;
       document.body.appendChild(modal);
+      modal.querySelector('#dsr-permission-retry').addEventListener('click', () => {
+        modal.hidden = true;
+        window.setTimeout(() => document.querySelector('#dsr-repair-notify')?.click(), 0);
+      });
       modal.querySelector('#dsr-permission-close').addEventListener('click', () => { modal.hidden = true; });
     }
-    modal.querySelector('#dsr-permission-copy').textContent = blocked
-      ? '目前 Chrome 已封鎖這個網站的通知，因此系統不會再次跳出允許視窗。請先在網站權限中改成允許。'
-      : 'Chrome 這次沒有完成通知授權。若沒有看到系統允許視窗，請直接從網址列的網站權限開啟通知。';
+    const guide = permissionGuideContent(blocked);
+    modal.dataset.mode = guide.mode;
+    modal.querySelector('#dsr-permission-title').textContent = guide.title;
+    modal.querySelector('#dsr-permission-copy').textContent = guide.copy;
+    modal.querySelector('#dsr-permission-steps').innerHTML = guide.steps.map(step => `<li>${step}</li>`).join('');
+    modal.querySelector('#dsr-permission-foot').textContent = guide.foot;
     modal.hidden = false;
   }
 
@@ -105,15 +172,17 @@
     const currentPermission = notifications?.permission || 'unsupported';
     if (currentPermission === 'denied') {
       showPermissionGuide(true);
-      throw new Error('通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。');
+      throw new Error(platform?.runtime?.isPWA
+        ? '通知已被系統封鎖，請依畫面指引到 App 通知設定改成允許。'
+        : '通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。');
     }
     if (currentPermission === 'default') {
       const permission = await notifications.requestPermission();
       if (permission !== 'granted') {
         showPermissionGuide(permission === 'denied');
         throw new Error(permission === 'denied'
-          ? '通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。'
-          : '你尚未允許系統通知，請完成網站通知權限設定。');
+          ? (platform?.runtime?.isPWA ? '通知已被系統封鎖，請到 App 通知設定改成允許。' : '通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。')
+          : '你尚未允許系統通知，請完成通知權限設定。');
       }
     } else if (currentPermission !== 'granted') {
       throw new Error('目前環境無法取得系統通知權限。');
