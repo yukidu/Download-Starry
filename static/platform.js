@@ -84,6 +84,10 @@
       event.preventDefault();
       installPrompt = event;
     });
+    window.addEventListener('appinstalled', () => {
+      installed = true;
+      installPrompt = null;
+    });
   }
 
   const pwa = Object.freeze({
