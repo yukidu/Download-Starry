@@ -1,4 +1,3 @@
-'use strict';
 (()=>{
 const h=document.head,m=document.querySelector('.site-brand-mark');if(m){m.replaceChildren();m.style.cssText+=';background:url(/static/app-icon.svg?v=4) center/cover;box-shadow:none;outline:1px solid #263158'}
 h.insertAdjacentHTML('beforeend','<link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0b1026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
