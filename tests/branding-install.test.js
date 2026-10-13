@@ -12,14 +12,26 @@ test('PWA 安裝名稱統一為繁星下載', async () => {
   assert.match(await read('static/app-icon.svg'), /aria-label="繁星下載"/);
 });
 
-test('原始 HTML 與執行後首頁品牌都直接使用繁星下載', async () => {
-  const template = await read('templates/index.html');
+test('網站 Logo 與 PWA 安裝圖示共用同一個 App Icon', async () => {
+  const manifest = JSON.parse(await read('static/manifest.webmanifest'));
   const app = await read('static/app.js');
+  const icon = await read('static/app-icon.svg');
+  const iconSrc = '/static/app-icon.svg?v=4';
+
+  assert.ok(manifest.icons.length >= 2);
+  assert.ok(manifest.icons.every(item => item.src === iconSrc));
+  assert.match(app, /background:url\(\/static\/app-icon\.svg\?v=4\) center\/cover/);
+  assert.match(app, /mark\.replaceChildren\(\)/);
+  assert.match(icon, /id="download-arrow"/);
+  assert.match(icon, /id="play-mark"/);
+  assert.match(icon, /id="star-mark"/);
+});
+
+test('原始 HTML 品牌直接使用繁星下載', async () => {
+  const template = await read('templates/index.html');
   assert.match(template, /<title>繁星下載（串流影音下載）<\/title>/);
   assert.match(template, /site-brand-text">繁星下載<\/span>/);
   assert.doesNotMatch(template, /繁星回憶/);
-  assert.match(app, /document\.title = '繁星下載（串流影音下載）'/);
-  assert.match(app, /replaceChildren\('繁星下載'\)/);
 });
 
 test('首頁主選單提供安裝到桌面入口', async () => {

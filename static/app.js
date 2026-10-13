@@ -1,8 +1,9 @@
 'use strict';
 (() => {
   const head = document.head;
-  document.title = '繁星下載（串流影音下載）';
-  document.querySelector('.site-brand-text')?.replaceChildren('繁星下載');
+  const mark=document.querySelector('.site-brand-mark');
+  if(mark){mark.replaceChildren();mark.style.cssText+=';background:url(/static/app-icon.svg?v=4) center/cover;box-shadow:none'}
+
   head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0b1026"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
 
   const menu = document.querySelector('.main-menu-panel');
