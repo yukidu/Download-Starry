@@ -1,6 +1,6 @@
 {
-  "name": "繁星回憶（串流影音下載）",
-  "short_name": "繁星回憶",
+  "name": "繁星下載",
+  "short_name": "繁星下載",
   "description": "社群影音與照片下載工具",
   "lang": "zh-Hant",
   "start_url": "/",
