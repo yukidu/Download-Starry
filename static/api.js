@@ -60,6 +60,35 @@
       }
       return response;
     },
+    async memberSession() {
+      const response = await fetch(endpoint('/api/auth/starry/session'), {cache: 'no-store'});
+      if (response.status === 401) return null;
+      return readJson(response, '無法取得 Starry ID 會員資料');
+    },
+    async memberLogout() {
+      const response = await fetch(endpoint('/api/auth/starry/logout'), {method: 'POST'});
+      return readJson(response, '無法登出');
+    },
+    async createReport(report) {
+      const response = await fetch(endpoint('/api/reports'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(report),
+      });
+      return readJson(response, '無法送出回報');
+    },
+    async reports() {
+      const response = await fetch(endpoint('/api/reports'), {cache: 'no-store'});
+      return readJson(response, '無法讀取回報');
+    },
+    async updateReportStatus(id, status) {
+      const response = await fetch(endpoint(`/api/reports/${encodeURIComponent(id)}/status`), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status}),
+      });
+      return readJson(response, '無法更新回報狀態');
+    },
   };
 
   window.SaveVideoAPI = Object.freeze(api);
