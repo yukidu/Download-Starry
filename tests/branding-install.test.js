@@ -12,10 +12,18 @@ test('PWA 安裝名稱統一為繁星下載', async () => {
   assert.match(await read('static/app-icon.svg'), /aria-label="繁星下載"/);
 });
 
-test('首頁品牌與主選單提供安裝到桌面入口', async () => {
+test('原始 HTML 與執行後首頁品牌都直接使用繁星下載', async () => {
+  const template = await read('templates/index.html');
   const app = await read('static/app.js');
+  assert.match(template, /<title>繁星下載（串流影音下載）<\/title>/);
+  assert.match(template, /site-brand-text">繁星下載<\/span>/);
+  assert.doesNotMatch(template, /繁星回憶/);
   assert.match(app, /document\.title = '繁星下載（串流影音下載）'/);
   assert.match(app, /replaceChildren\('繁星下載'\)/);
+});
+
+test('首頁主選單提供安裝到桌面入口', async () => {
+  const app = await read('static/app.js');
   assert.match(app, /安裝到桌面/);
   assert.match(app, /install-pwa\.js/);
   assert.match(app, /Download Starry bootstrap failed/);
