@@ -12,6 +12,22 @@ test('PWA 安裝名稱統一為繁星下載', async () => {
   assert.match(await read('static/app-icon.svg'), /aria-label="繁星下載"/);
 });
 
+test('網站 Logo、favicon、PWA 安裝圖示共用同一個 App Icon', async () => {
+  const manifest = JSON.parse(await read('static/manifest.webmanifest'));
+  const app = await read('static/app.js');
+  const icon = await read('static/app-icon.svg');
+  const iconSrc = '/static/app-icon.svg?v=4';
+
+  assert.ok(manifest.icons.length >= 2);
+  assert.ok(manifest.icons.every(item => item.src === iconSrc));
+  assert.match(app, /const ICON_URL = '\/static\/app-icon\.svg\?v=4'/);
+  assert.match(app, /brandMark\.replaceChildren\(logo\)/);
+  assert.match(app, /favicon\.href = ICON_URL/);
+  assert.match(icon, /id="download-arrow"/);
+  assert.match(icon, /id="play-mark"/);
+  assert.match(icon, /id="star-mark"/);
+});
+
 test('原始 HTML 與執行後首頁品牌都直接使用繁星下載', async () => {
   const template = await read('templates/index.html');
   const app = await read('static/app.js');
