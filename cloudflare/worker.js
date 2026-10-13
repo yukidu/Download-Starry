@@ -1,5 +1,6 @@
 import {Container} from '@cloudflare/containers';
 import {digest, handleRequest} from './access.js';
+import {handleCentralSso} from './central-sso.js';
 import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
 
 export class VideoDownloader extends Container {
@@ -21,6 +22,13 @@ export class VideoDownloader extends Container {
 }
 
 async function fetchHandler(request, env, ctx) {
+  try {
+    const centralSsoResponse = await handleCentralSso(request, env);
+    if (centralSsoResponse) return centralSsoResponse;
+  } catch {
+    return Response.json({error: 'Starry ID 中央登入服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+  }
+
   const url = new URL(request.url);
   if (url.pathname.startsWith('/api/push/')) {
     try {
