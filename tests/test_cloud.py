@@ -28,7 +28,7 @@ def test_authentication_and_cloud_ui(client):
     assert client.post('/api/info', json={'url': 'https://youtu.be/example'}).status_code == 401
     response = client.get('/', headers=HEADERS)
     assert response.status_code == 200
-    assert '繁星回憶（串流影音下載）' in response.text
+    assert '繁星下載（串流影音下載）' in response.text
     assert '系統開發者 段承志、杜杜龍 2026' not in response.text
     assert 'id="menu-toggle"' in response.text
     assert 'id="top-theme-toggle"' in response.text
