@@ -1,5 +1,6 @@
 import {Container} from '@cloudflare/containers';
 import {digest, handleRequest} from './access.js';
+import {handlePushRequest, notifyReportCreated} from './push.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -19,4 +20,22 @@ export class VideoDownloader extends Container {
   }
 }
 
-export default {fetch: handleRequest};
+async function fetchHandler(request, env, ctx) {
+  const pushResponse = await handlePushRequest(request, env).catch(() => null);
+  if (pushResponse) return pushResponse;
+
+  const url = new URL(request.url);
+  if (request.method === 'POST' && url.pathname === '/api/reports') {
+    const reportRequest = request.clone();
+    const response = await handleRequest(request, env);
+    if (response.ok) {
+      const report = await reportRequest.json().catch(() => ({}));
+      ctx?.waitUntil?.(notifyReportCreated(env, report).catch(() => undefined));
+    }
+    return response;
+  }
+
+  return handleRequest(request, env);
+}
+
+export default {fetch: fetchHandler};
