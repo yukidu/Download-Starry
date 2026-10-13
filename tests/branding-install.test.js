@@ -34,11 +34,11 @@ test('原始 HTML 品牌直接使用繁星下載', async () => {
   assert.doesNotMatch(template, /繁星回憶/);
 });
 
-test('置頂主工具列與漢堡選單都提供安裝到桌面入口', async () => {
+test('安裝入口只留在漢堡選單並導向原生頁', async () => {
   const toolbar = await read('static/toolbar.js');
   assert.match(toolbar, /install-app-button/);
-  assert.match(toolbar, /top-install-button/);
-  assert.match(toolbar, /安裝到桌面/);
+  assert.doesNotMatch(toolbar, /top-install-button/);
+  assert.match(toolbar, /go\('\/install'\)/);
   assert.match(toolbar, /install-pwa\.js/);
 });
 
@@ -51,9 +51,10 @@ test('PWA platform layer 管理原生安裝提示與已安裝狀態', async () =
   assert.match(platform, /iPad\|iPhone\|iPod/);
 });
 
-test('已安裝提示與 iOS fallback 文案存在', async () => {
+test('安裝功能使用原生頁而非自訂彈窗', async () => {
   const install = await read('static/install-pwa.js');
-  assert.match(install, /你已安裝/);
+  assert.match(install, /downloadstarry-install-page/);
   assert.match(install, /加入主畫面/);
-  assert.match(install, /繁星下載 · Download Starry/);
+  assert.match(install, /Object\.freeze\(\{mount\}\)/);
+  assert.doesNotMatch(install, /createElement\('dialog'\)|showModal|window\.alert/);
 });
