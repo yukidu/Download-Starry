@@ -11,8 +11,9 @@ test('loaded platform layer keeps only current web/native boundaries', async () 
     'clipboard', 'files', 'lifecycle', 'pwa',
   ]) assert.match(source, new RegExp(capability));
   assert.match(source, /SaveVideoNative/);
+  assert.match(source, /beforeinstallprompt/);
+  assert.match(source, /appinstalled/);
   assert.doesNotMatch(source, /@capacitor\//);
-  assert.doesNotMatch(source, /beforeinstallprompt/);
   assert.doesNotMatch(source, /addEventListener\(['"]online/);
   assert.doesNotMatch(source, /addEventListener\(['"]offline/);
 });

@@ -10,10 +10,13 @@
   }
   let isCapacitor = platform !== 'web';
   try { if (capacitor?.isNativePlatform) isCapacitor = Boolean(capacitor.isNativePlatform()); } catch (_) {}
+  const ua = navigator.userAgent || '';
+  const webIOS = !isCapacitor && (/iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const webAndroid = !isCapacitor && /Android/i.test(ua);
   const isStandalone = Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true);
   const runtime = Object.freeze({
     platform, isCapacitor, isWeb: !isCapacitor,
-    isAndroid: platform === 'android', isIOS: platform === 'ios',
+    isAndroid: platform === 'android' || webAndroid, isIOS: platform === 'ios' || webIOS,
     isStandalone, isPWA: !isCapacitor && isStandalone,
   });
 
@@ -74,7 +77,32 @@
     },
   });
 
+  let installPrompt = null;
+  let installed = isStandalone;
+  if (!isCapacitor && !installed) {
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      installPrompt = event;
+    });
+    window.addEventListener('appinstalled', () => {
+      installed = true;
+      installPrompt = null;
+    });
+  }
+
   const pwa = Object.freeze({
+    get isInstalled() { return installed; },
+    get canPromptInstall() { return Boolean(installPrompt); },
+    async promptInstall() {
+      if (installed) return 'installed';
+      if (!installPrompt) return 'unavailable';
+      const prompt = installPrompt;
+      installPrompt = null;
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      if (choice?.outcome === 'accepted') installed = true;
+      return choice?.outcome || 'dismissed';
+    },
     registerServiceWorker(url = '/static/service-worker.js') {
       if (runtime.isCapacitor || !navigator.serviceWorker) return Promise.resolve(null);
       return new Promise(resolve => {
