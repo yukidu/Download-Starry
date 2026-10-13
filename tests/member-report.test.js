@@ -8,7 +8,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 test('首頁依需求調整 CTA、網址按鈕順序與無法下載入口', async () => {
   const app = await read('static/app.js');
   assert.match(app, /請開發者喝杯咖啡/);
-  assert.match(app, /pasteButton\.after\(lookupButton\);lookupButton\.after\(clearButton\)/);
+  assert.match(app, /p\.after\(l\);l\.after\(c\)/);
   assert.match(app, /report-download-button/);
   assert.match(app, /無法下載/);
   assert.match(app, /menu-report-button/);
@@ -18,26 +18,28 @@ test('首頁依需求調整 CTA、網址按鈕順序與無法下載入口', asyn
   assert.match(app, /#263158/);
 });
 
-test('會員回報介面保持 lazy-load，不進首頁 core preload', async () => {
+test('會員回報、會員 API、會員 platform 都保持 lazy-load', async () => {
   const app = await read('static/app.js');
-  const sourceList = app.match(/const sources = \[([^\]]+)\]/s)?.[1] || '';
-  assert.doesNotMatch(sourceList, /member-report\.js/);
-  assert.match(app, /load\('\/static\/member-report\.js'\)/);
+  const sourceList = app.match(/const sources=\[([^\]]+)\]/s)?.[1] || '';
+  for (const file of ['member-report.js','member-api.js','member-platform.js']) {
+    assert.doesNotMatch(sourceList, new RegExp(file.replace('.', '\\.')));
+    assert.match(app, new RegExp(`load\\('/static/${file.replace('.', '\\.')}\\'\\)`));
+  }
 });
 
-test('Starry ID 使用 platform auth/session storage，不把會員 token 放 localStorage', async () => {
-  const platform = await read('static/platform.js');
+test('Starry ID 使用 lazy platform auth/session storage，不把會員 token 放 localStorage', async () => {
+  const platform = await read('static/member-platform.js');
   const report = await read('static/member-report.js');
   assert.match(platform, /sessionStorage/);
   assert.match(platform, /\/api\/auth\/starry\/login/);
   assert.match(platform, /native\(\)\?\.auth/);
   assert.doesNotMatch(report, /localStorage/);
-  assert.match(report, /platform\.storage\.session/);
+  assert.match(report, /platform\.session/);
   assert.match(report, /platform\.auth\.login/);
 });
 
-test('回報資料與會員 API 全部集中在 API layer', async () => {
-  const api = await read('static/api.js');
+test('回報資料與會員 API 集中在 lazy API layer', async () => {
+  const api = await read('static/member-api.js');
   const report = await read('static/member-report.js');
   for (const endpoint of ['/api/auth/starry/session','/api/auth/starry/logout','/api/reports']) assert.match(api, new RegExp(endpoint.replaceAll('/', '\\/')));
   assert.match(api, /updateReportStatus/);
