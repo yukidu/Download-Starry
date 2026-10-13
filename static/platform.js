@@ -74,7 +74,28 @@
     },
   });
 
+  let installPrompt = null;
+  let installed = isStandalone;
+  if (!isCapacitor && !installed) {
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      installPrompt = event;
+    });
+  }
+
   const pwa = Object.freeze({
+    get isInstalled() { return installed; },
+    get canPromptInstall() { return Boolean(installPrompt); },
+    async promptInstall() {
+      if (installed) return 'installed';
+      if (!installPrompt) return 'unavailable';
+      const prompt = installPrompt;
+      installPrompt = null;
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      if (choice?.outcome === 'accepted') installed = true;
+      return choice?.outcome || 'dismissed';
+    },
     registerServiceWorker(url = '/static/service-worker.js') {
       if (runtime.isCapacitor || !navigator.serviceWorker) return Promise.resolve(null);
       return new Promise(resolve => {
