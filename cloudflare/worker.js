@@ -1,6 +1,7 @@
 import {Container} from '@cloudflare/containers';
 import {digest, handleRequest} from './access.js';
 import {handleCentralSso} from './central-sso.js';
+import {handleDownloadHistoryRequest, recordDownloadStart} from './history.js';
 import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
 
 export class VideoDownloader extends Container {
@@ -30,6 +31,15 @@ async function fetchHandler(request, env, ctx) {
   }
 
   const url = new URL(request.url);
+
+  if (url.pathname === '/api/download-history') {
+    try {
+      return await handleDownloadHistoryRequest(request, env);
+    } catch {
+      return Response.json({error: '下載紀錄服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    }
+  }
+
   if (url.pathname.startsWith('/api/push/')) {
     try {
       return await handlePushRequest(request, env);
@@ -48,6 +58,16 @@ async function fetchHandler(request, env, ctx) {
         const push = await notifyReportCreated(env, report).catch(error => ({status: 'failed', error: String(error?.message || error)}));
         await saveReportPushState(env, result?.id, push);
       })());
+    }
+    return response;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/download') {
+    const historyRequest = request.clone();
+    const response = await handleRequest(request, env);
+    if (response.ok) {
+      const result = await response.clone().json().catch(() => ({}));
+      ctx?.waitUntil?.(recordDownloadStart(historyRequest, env, result));
     }
     return response;
   }
