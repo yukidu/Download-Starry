@@ -17,8 +17,12 @@ const normalizeMemberHeader=()=>{
   const login=document.getElementById('top-login-button');
   const member=document.getElementById('top-member-summary');
   const rank=document.querySelector('.top-member-rank');
-  if(member&&!member.hidden&&login)login.hidden=true;
-  if(rank){const value=String(rank.textContent||'').trim();rank.hidden=emptyRanks.has(value.toLowerCase())||emptyRanks.has(value)}
+  if(member&&!member.hidden&&login&&!login.hidden)login.hidden=true;
+  if(rank){
+    const value=String(rank.textContent||'').trim();
+    const shouldHide=emptyRanks.has(value.toLowerCase())||emptyRanks.has(value);
+    if(rank.hidden!==shouldHide)rank.hidden=shouldHide;
+  }
 };
 normalizeMemberHeader();
 const observer=new MutationObserver(normalizeMemberHeader);observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
