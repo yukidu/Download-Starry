@@ -3,6 +3,7 @@ import {digest, handleRequest} from './access.js';
 import {handleCentralSso} from './central-sso.js';
 import {handleDownloadHistoryRequest, recordDownloadStart} from './history.js';
 import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
+import {enforceMemberReport, handleReportRepairRequest} from './report-repair.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -40,6 +41,14 @@ async function fetchHandler(request, env, ctx) {
     }
   }
 
+  if (url.pathname.startsWith('/api/report-repair/')) {
+    try {
+      return await handleReportRepairRequest(request, env);
+    } catch {
+      return Response.json({error: '修復通知服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    }
+  }
+
   if (url.pathname.startsWith('/api/push/')) {
     try {
       return await handlePushRequest(request, env);
@@ -49,6 +58,8 @@ async function fetchHandler(request, env, ctx) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/reports') {
+    const membershipRejected = await enforceMemberReport(request, env);
+    if (membershipRejected) return membershipRejected;
     const reportRequest = request.clone();
     const response = await handleRequest(request, env);
     if (response.ok) {

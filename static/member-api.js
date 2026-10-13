@@ -26,7 +26,19 @@
       return readJson(await fetch(endpoint('/api/reports'), {cache:'no-store'}), '無法讀取回報');
     },
     async updateReportStatus(id, status) {
-      return readJson(await fetch(endpoint(`/api/reports/${encodeURIComponent(id)}/status`), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}), '無法更新回報狀態');
+      return readJson(await fetch(endpoint('/api/report-repair/status'), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}), '無法更新回報狀態');
+    },
+    async repairConfig() {
+      return readJson(await fetch(endpoint('/api/report-repair/config'), {cache:'no-store'}), '無法讀取修復通知設定');
+    },
+    async repairSubscribe(subscription) {
+      return readJson(await fetch(endpoint('/api/report-repair/subscribe'), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(subscription)}), '無法啟用修復通知');
+    },
+    async repairWatch(reportId) {
+      return readJson(await fetch(endpoint('/api/report-repair/watch'), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportId})}), '無法設定修復通知');
+    },
+    async repairTest() {
+      return readJson(await fetch(endpoint('/api/report-repair/test'), {method:'POST'}), '修復通知測試失敗');
     },
     async downloadHistory() {
       return readJson(await fetch(endpoint('/api/download-history'), {cache:'no-store'}), '無法讀取下載紀錄');
