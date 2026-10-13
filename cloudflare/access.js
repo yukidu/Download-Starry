@@ -1,6 +1,7 @@
 import {handleStarryRequest} from './starry.js';
 
 const encoder = new TextEncoder();
+const PAGE_ROUTES = new Set(['/', '/report', '/account', '/install']);
 
 export async function digest(value) {
   const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value)));
@@ -31,7 +32,7 @@ export async function authorize(request, env) {
 
 export function allowedRoute(path, method) {
   if (['GET', 'HEAD'].includes(method)) {
-    return path === '/' || path === '/api/health' ||
+    return PAGE_ROUTES.has(path) || path === '/api/health' ||
       /^\/static\/[A-Za-z0-9._-]+$/.test(path) ||
       /^\/api\/download\/[a-f0-9]{32}\/(progress|file)$/.test(path);
   }
@@ -51,10 +52,13 @@ export async function handleRequest(request, env) {
 
   const rejected = await authorize(request, env);
   if (rejected) return rejected;
-  if (!allowedRoute(new URL(request.url).pathname, request.method)) {
+  const path = new URL(request.url).pathname;
+  if (!allowedRoute(path, request.method)) {
     return errorResponse('找不到此功能', 404);
   }
-  const forwarded = new Request(request);
+  const forwardedUrl = new URL(request.url);
+  if (PAGE_ROUTES.has(path) && path !== '/') forwardedUrl.pathname = '/';
+  const forwarded = new Request(forwardedUrl, request);
   forwarded.headers.delete('Authorization');
   forwarded.headers.delete('Cookie');
   forwarded.headers.delete('cf-container-target-port');
@@ -62,10 +66,9 @@ export async function handleRequest(request, env) {
   try {
     // Every job, progress request and file transfer must reach the same instance.
     const container = env.DOWNLOADER.getByName('personal-downloader');
-    const path = new URL(request.url).pathname;
     // Retry only page resources: never repeat a download-creation POST.
     const retryable = ['GET', 'HEAD'].includes(request.method) &&
-      (path === '/' || path.startsWith('/static/'));
+      (PAGE_ROUTES.has(path) || path.startsWith('/static/'));
     let response;
     for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
       try {
