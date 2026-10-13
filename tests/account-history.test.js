@@ -43,3 +43,9 @@ test('登入後不再露出登入按鈕，無獎銜時隱藏第二行', async ()
   assert.match(fix, /'無'/);
   assert.match(fix, /menu-history-button/);
 });
+
+test('會員表頭監聽器不會重複寫入相同 hidden 狀態造成頁面卡死', async () => {
+  const fix = await read('static/header-member-fix.js');
+  assert.match(fix, /login&&!login\.hidden/);
+  assert.match(fix, /rank\.hidden!==shouldHide/);
+});
