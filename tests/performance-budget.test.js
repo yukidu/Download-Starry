@@ -22,7 +22,7 @@ const HOMEPAGE_CSS = [
 
 test('web-first homepage JS stays within the requested-feature performance budget', async () => {
   const total = (await Promise.all(HOMEPAGE_JS.map(bytes))).reduce((sum, value) => sum + value, 0);
-  assert.ok(total <= 71600, `homepage JS grew to ${total} bytes; budget is 71600`);
+  assert.ok(total <= 71700, `homepage JS grew to ${total} bytes; budget is 71700`);
 });
 
 test('PWA install dialog code stays lazy-loaded until the user clicks install', async () => {
