@@ -125,7 +125,7 @@ async function deliver(env, row, data) {
 
 export async function sendAdminPushNotification(env, data) {
   if (!pushConfigured(env) || !env.STARRY_ID_DB) {
-    return {status: 'not_configured', sent: 0, total: 0};
+    return {status: 'not_configured', sent: 0, total: 0, error: 'Web Push secrets unavailable'};
   }
   await ensureSchema(env);
   const rows = await env.STARRY_ID_DB.prepare(`
@@ -141,7 +141,24 @@ export async function sendAdminPushNotification(env, data) {
     try { if (await deliver(env, row, data)) sent += 1; }
     catch (_) {}
   }));
-  return {status: subscriptions.length ? (sent ? 'sent' : 'failed') : 'no_subscribers', sent, total: subscriptions.length};
+  if (!subscriptions.length) return {status: 'not_configured', sent: 0, total: 0, error: 'No active Web Push subscription'};
+  return {
+    status: sent ? 'sent' : 'failed',
+    sent,
+    total: subscriptions.length,
+    error: sent ? '' : 'Web Push delivery failed',
+  };
+}
+
+export async function saveReportPushState(env, reportId, result) {
+  if (!env.STARRY_ID_DB || !reportId) return;
+  const status = ['sent', 'failed', 'not_configured'].includes(result?.status) ? result.status : 'failed';
+  const error = clean(result?.error, 180);
+  await env.STARRY_ID_DB.prepare(`
+    UPDATE downloadstarry_report_notifications
+    SET lineStatus = ?, lineError = ?, updatedAt = ?
+    WHERE reportId = ?
+  `).bind(status, error, Date.now(), String(reportId)).run().catch(() => undefined);
 }
 
 export async function notifyReportCreated(env, report = {}) {
