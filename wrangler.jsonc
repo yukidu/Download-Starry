@@ -12,6 +12,10 @@
     "database_name": "starry_id_db",
     "database_id": "01195c92-555e-4816-bddc-5b8cb2e795db"
   }],
+  "send_email": [{
+    "name": "REPORT_EMAIL",
+    "destination_address": "yukidu@gmail.com"
+  }],
   "containers": [{
     "class_name": "VideoDownloader",
     "image": "./Dockerfile",

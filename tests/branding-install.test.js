@@ -14,14 +14,14 @@ test('PWA 安裝名稱統一為繁星下載', async () => {
 
 test('網站 Logo 與 PWA 安裝圖示共用同一個 App Icon', async () => {
   const manifest = JSON.parse(await read('static/manifest.webmanifest'));
-  const app = await read('static/app.js');
+  const toolbar = await read('static/toolbar.js');
   const icon = await read('static/app-icon.svg');
   const iconSrc = '/static/app-icon.svg?v=4';
 
   assert.ok(manifest.icons.length >= 2);
   assert.ok(manifest.icons.every(item => item.src === iconSrc));
-  assert.match(app, /background:url\(\/static\/app-icon\.svg\?v=4\) center\/cover/);
-  assert.match(app, /\.replaceChildren\(\)/);
+  assert.match(toolbar, /background:url\(\/static\/app-icon\.svg\?v=4\) center\/cover/);
+  assert.match(toolbar, /\.replaceChildren\(\)/);
   assert.match(icon, /id="download-arrow"/);
   assert.match(icon, /id="play-mark"/);
   assert.match(icon, /id="star-mark"/);
@@ -34,11 +34,12 @@ test('原始 HTML 品牌直接使用繁星下載', async () => {
   assert.doesNotMatch(template, /繁星回憶/);
 });
 
-test('首頁主選單提供安裝到桌面入口', async () => {
-  const app = await read('static/app.js');
-  assert.match(app, /安裝到桌面/);
-  assert.match(app, /install-pwa\.js/);
-  assert.match(app, /Download Starry bootstrap failed/);
+test('置頂主工具列與漢堡選單都提供安裝到桌面入口', async () => {
+  const toolbar = await read('static/toolbar.js');
+  assert.match(toolbar, /install-app-button/);
+  assert.match(toolbar, /top-install-button/);
+  assert.match(toolbar, /安裝到桌面/);
+  assert.match(toolbar, /install-pwa\.js/);
 });
 
 test('PWA platform layer 管理原生安裝提示與已安裝狀態', async () => {

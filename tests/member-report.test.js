@@ -5,27 +5,40 @@ import {handleStarryRequest} from '../cloudflare/starry.js';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () => {
-  const app = await read('static/app.js');
-  assert.match(app, /請開發者喝杯咖啡/);
-  assert.match(app, /p\.after\(l\);l\.after\(c\)/);
-  assert.match(app, /outline:1px solid #263158/);
+test('固定置頂工具列與漢堡選單都提供完整雲端功能', async () => {
+  const toolbar = await read('static/toolbar.js');
+  for (const text of ['首頁','貼網址','Starry ID','回報錯誤','安裝']) assert.match(toolbar, new RegExp(text));
+  assert.match(toolbar, /starry-member-button/);
+  assert.match(toolbar, /menu-report-button/);
+  assert.match(toolbar, /install-app-button/);
+  assert.match(toolbar, /position:sticky!important/);
+  assert.match(toolbar, /overflow-x:auto/);
 });
 
-test('會員回報 shell 與會員模組都保持互動後 lazy-load', async () => {
+test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () => {
+  const toolbar = await read('static/toolbar.js');
+  assert.match(toolbar, /請開發者喝杯咖啡/);
+  assert.match(toolbar, /paste\.after\(lookup\);lookup\.after\(clear\)/);
+  assert.match(toolbar, /outline:1px solid #263158/);
+});
+
+test('會員與回報深層模組仍保持互動後 lazy-load', async () => {
   const app = await read('static/app.js');
+  const toolbar = await read('static/toolbar.js');
   const shell = await read('static/member-shell.js');
-  const sourceList = app.match(/const sources=\[([^\]]+)\]/s)?.[1] || '';
-  assert.doesNotMatch(sourceList, /member-shell\.js|member-report\.js|member-api\.js|member-platform\.js/);
-  assert.match(app, /load\('\/static\/member-shell\.js'\)/);
-  assert.match(app, /menu-toggle/);
-  assert.match(app, /lookup-form/);
-  assert.match(shell, /report-download-button/);
-  assert.match(shell, /無法下載/);
-  assert.match(shell, /menu-report-button/);
-  assert.match(shell, /回報無法下載/);
-  assert.match(shell, /Starry ID 登入/);
+  assert.doesNotMatch(app, /member-shell\.js|member-report\.js|member-api\.js|member-platform\.js/);
+  assert.match(toolbar, /load\('\/static\/member-shell\.js'\)/);
   for (const file of ['member-report.js','member-api.js','member-platform.js']) assert.match(shell, new RegExp(`/static/${file.replace('.', '\\.')}`));
+});
+
+test('回報錯誤不要求登入，Starry ID 帳戶頁才需要登入', async () => {
+  const report = await read('static/member-report.js');
+  assert.match(report, /訪客（不需登入）/);
+  assert.match(report, /不需登入即可送出/);
+  assert.match(report, /const data = await session\(\);/);
+  assert.match(report, /const user = data\?\.authenticated \? data\.user : null/);
+  assert.match(report, /async function account\(\)/);
+  assert.match(report, /prepareMember\(\{mode: 'account'\}\)/);
 });
 
 test('Starry ID 使用 lazy platform auth/session storage，不把會員 token 放 localStorage', async () => {
@@ -47,26 +60,38 @@ test('回報資料與會員 API 集中在 lazy API layer', async () => {
   assert.doesNotMatch(report, /fetch\(/);
 });
 
-test('parsed 回報自動帶網址時間會員，manual 保持欄位空白', async () => {
+test('parsed 回報自動帶網址時間，manual 保持欄位空白', async () => {
   const report = await read('static/member-report.js');
   assert.match(report, /source === 'parsed'/);
   assert.match(report, /time\.value = parsed \?/);
   assert.match(report, /url\.readOnly = parsed/);
   assert.match(report, /time\.readOnly = parsed/);
-  assert.match(report, /Starry ID/);
+  assert.match(report, /目前以訪客身分回報/);
   assert.match(report, /請手動填寫網址、日期時間與備註/);
 });
 
-test('Worker 綁中央 Starry ID 且 app 專屬資料表 namespaced', async () => {
+test('Worker 支援匿名工單、防濫用、Email 與 LINE 通知', async () => {
   const wrangler = JSON.parse(await read('wrangler.jsonc'));
-  assert.equal(wrangler.d1_databases?.[0]?.binding, 'STARRY_ID_DB');
-  assert.equal(wrangler.d1_databases?.[0]?.database_name, 'starry_id_db');
   const worker = await read('cloudflare/starry.js');
-  assert.match(worker, /downloadstarry_sessions/);
-  assert.match(worker, /downloadstarry_reports/);
-  assert.match(worker, /app_memberships/);
-  assert.match(worker, /HttpOnly; Secure; SameSite=Lax/);
-  assert.match(worker, /ECHO_STARRY_ORIGIN = 'https:\/\/echo\.starry\.phd'/);
+  assert.equal(wrangler.d1_databases?.[0]?.binding, 'STARRY_ID_DB');
+  assert.equal(wrangler.send_email?.[0]?.name, 'REPORT_EMAIL');
+  assert.equal(wrangler.send_email?.[0]?.destination_address, 'yukidu@gmail.com');
+  assert.match(worker, /downloadstarry_report_notifications/);
+  assert.match(worker, /downloadstarry_report_rate/);
+  assert.match(worker, /REPORT_WINDOW_MAX = 6/);
+  assert.match(worker, /env\.REPORT_EMAIL\.send/);
+  assert.match(worker, /LINE_CHANNEL_ACCESS_TOKEN/);
+  assert.match(worker, /LINE_ADMIN_USER_ID/);
+  assert.match(worker, /https:\/\/api\.line\.me\/v2\/bot\/message\/push/);
+  assert.match(worker, /member\?\.id \|\| ''/);
+  assert.match(worker, /path === '\/api\/reports' && method === 'POST'/);
+});
+
+test('通知失敗不會回滾已建立的工單', async () => {
+  const worker = await read('cloudflare/starry.js');
+  const createReport = worker.match(/async function createReport[\s\S]*?\n}\n\nasync function listReports/)?.[0] || '';
+  assert.match(createReport, /INSERT INTO downloadstarry_reports[\s\S]*?\.run\(\);[\s\S]*?sendEmailNotification\(env, report, member\)/);
+  assert.match(createReport, /saveNotificationState\(env, id, email, line\)\.catch/);
 });
 
 test('回報寫入前拒絕跨站 POST', async () => {

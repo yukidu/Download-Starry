@@ -27,7 +27,7 @@
     document.head.appendChild(style);
     dialog = document.createElement('dialog');
     dialog.id = 'downloadstarry-report';
-    dialog.innerHTML = `<div class="dsr-head"><strong id="dsr-title">回報無法下載</strong><button class="dsr-close" type="button" aria-label="關閉">×</button></div><div class="dsr-body"><div id="dsr-member" class="dsr-member"></div><p id="dsr-account-note" class="dsr-account-note dsr-hidden">你現在使用 Starry ID 中央會員登入。繁星下載不建立第二套會員資料。</p><form id="dsr-form" class="dsr-form"><label><span>無法下載的網址</span><input id="dsr-url" type="url" placeholder="https://…"></label><label><span>日期時間</span><input id="dsr-time" type="datetime-local"></label><label><span>備註</span><textarea id="dsr-note" maxlength="2000" placeholder="可以補充發生狀況、平台或錯誤訊息…"></textarea></label><div class="dsr-actions"><button class="dsr-primary" type="submit">送出給管理員</button><button id="dsr-logout" class="dsr-secondary" type="button">登出 Starry ID</button></div><div id="dsr-message" class="dsr-message" aria-live="polite"></div></form><section id="dsr-admin" class="dsr-admin dsr-hidden"><h3>管理員｜無法下載回報</h3><div id="dsr-admin-list">讀取中…</div></section></div>`;
+    dialog.innerHTML = `<div class="dsr-head"><strong id="dsr-title">回報無法下載</strong><button class="dsr-close" type="button" aria-label="關閉">×</button></div><div class="dsr-body"><div id="dsr-member" class="dsr-member"></div><p id="dsr-account-note" class="dsr-account-note dsr-hidden">你現在使用 Starry ID 中央會員登入。繁星下載不建立第二套會員資料。</p><form id="dsr-form" class="dsr-form"><label><span>無法下載的網址</span><input id="dsr-url" type="url" placeholder="https://…"></label><label><span>日期時間</span><input id="dsr-time" type="datetime-local"></label><label><span>備註</span><textarea id="dsr-note" maxlength="2000" placeholder="可以補充發生狀況、平台或錯誤訊息…"></textarea></label><div class="dsr-actions"><button class="dsr-primary" type="submit">送出給管理員</button><button id="dsr-logout" class="dsr-secondary dsr-hidden" type="button">登出 Starry ID</button></div><div id="dsr-message" class="dsr-message" aria-live="polite"></div></form><section id="dsr-admin" class="dsr-admin dsr-hidden"><h3>管理員｜無法下載回報</h3><div id="dsr-admin-list">讀取中…</div></section></div>`;
     document.body.appendChild(dialog);
     dialog.querySelector('.dsr-close').onclick = () => dialog.close?.() || dialog.removeAttribute('open');
     dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close?.(); });
@@ -70,15 +70,23 @@
     ].map(([label,value]) => `<div class="dsr-chip"><small>${h(label)}</small><b>${h(value)}</b></div>`).join('');
   }
 
+  function visitorHtml() {
+    return '<div class="dsr-chip"><small>回報身分</small><b>訪客（不需登入）</b></div><div class="dsr-chip"><small>會員資料</small><b>未附加</b></div>';
+  }
+
+  function renderIdentity(user) {
+    ensureUi();
+    dialog.querySelector('#dsr-member').innerHTML = user ? memberHtml(user) : visitorHtml();
+    dialog.querySelector('#dsr-logout').classList.toggle('dsr-hidden', !user);
+  }
+
   async function prepareMember(intent) {
     const data = await session();
     if (!data?.authenticated || !data.user) {
       loginFor(intent);
       return null;
     }
-    ensureUi();
-    dialog.querySelector('#dsr-member').innerHTML = memberHtml(data.user);
-    dialog.querySelector('#dsr-logout').classList.remove('dsr-hidden');
+    renderIdentity(data.user);
     return data.user;
   }
 
@@ -89,9 +97,10 @@
       url: String(options.url || ''),
       reportedAt: String(options.reportedAt || '')
     };
-    const user = await prepareMember(intent);
-    if (!user) return;
+    const data = await session();
+    const user = data?.authenticated ? data.user : null;
     ensureUi();
+    renderIdentity(user);
     dialog.querySelector('#dsr-title').textContent = '回報無法下載';
     dialog.querySelector('#dsr-account-note').classList.add('dsr-hidden');
     dialog.querySelector('#dsr-form').classList.remove('dsr-hidden');
@@ -105,7 +114,9 @@
     url.readOnly = parsed;
     time.readOnly = parsed;
     dialog.dataset.source = intent.source;
-    dialog.querySelector('#dsr-message').textContent = parsed ? '已自動帶入目前網址、日期時間與 Starry ID 會員資料。' : '請手動填寫網址、日期時間與備註。';
+    dialog.querySelector('#dsr-message').textContent = parsed
+      ? `已自動帶入目前網址與日期時間${user ? '，並附上 Starry ID 會員資料。' : '；目前以訪客身分回報。'}`
+      : `請手動填寫網址、日期時間與備註${user ? '。' : '；不需登入即可送出。'}`;
     await renderAdmin(user);
     showDialog();
   }
@@ -131,7 +142,7 @@
     if (dialog.dataset.source === 'parsed' && !url) { message.textContent = '目前沒有可回報的網址'; return; }
     const submit = dialog.querySelector('.dsr-primary');
     submit.disabled = true;
-    message.textContent = '正在送出…';
+    message.textContent = '正在送出並通知管理員…';
     try {
       await api.createReport({source: dialog.dataset.source || 'manual', url, reportedAt, note});
       message.textContent = '已送出給管理員，謝謝你的回報。';
@@ -142,6 +153,7 @@
   }
 
   const statusLabel = status => ({new:'待處理',in_progress:'處理中',resolved:'已解決'}[status] || status);
+  const notifyLabel = value => ({sent:'已通知',not_configured:'未設定',failed:'失敗'}[value] || value || '—');
 
   async function renderAdmin(user, force = false) {
     ensureUi();
@@ -155,7 +167,7 @@
       const data = await api.reports();
       const rows = data.reports || [];
       list.dataset.loaded = '1';
-      list.innerHTML = rows.length ? rows.map(row => `<article class="dsr-report" data-id="${h(row.id)}"><div class="dsr-report-head"><b>${h(row.name || row.email || row.userId)} · ${h(statusLabel(row.status))}</b><small>${h(row.reportedAt || '')}</small></div><p><strong>網址：</strong>${row.url ? `<a href="${h(row.url)}" target="_blank" rel="noopener noreferrer">${h(row.url)}</a>` : '（未填）'}</p><p><strong>會員：</strong>${h(row.email || '')} ${h(row.approvedRank || row.rank || '')} ${h(row.center || '')}</p><p><strong>備註：</strong>${h(row.note || '（無）')}</p><div class="dsr-actions"><button class="dsr-status" data-status="new" type="button">待處理</button><button class="dsr-status" data-status="in_progress" type="button">處理中</button><button class="dsr-status" data-status="resolved" type="button">已解決</button></div></article>`).join('') : '目前沒有回報。';
+      list.innerHTML = rows.length ? rows.map(row => `<article class="dsr-report" data-id="${h(row.id)}"><div class="dsr-report-head"><b>${h(row.name || row.email || row.userId || '訪客')} · ${h(statusLabel(row.status))}</b><small>${h(row.reportedAt || '')}</small></div><p><strong>網址：</strong>${row.url ? `<a href="${h(row.url)}" target="_blank" rel="noopener noreferrer">${h(row.url)}</a>` : '（未填）'}</p><p><strong>身分：</strong>${row.userId ? `${h(row.email || row.userId)} ${h(row.approvedRank || row.rank || '')} ${h(row.center || '')}` : '訪客（未登入）'}</p><p><strong>備註：</strong>${h(row.note || '（無）')}</p><p><strong>通知：</strong>Email ${h(notifyLabel(row.emailStatus))}／LINE ${h(notifyLabel(row.lineStatus))}</p><div class="dsr-actions"><button class="dsr-status" data-status="new" type="button">待處理</button><button class="dsr-status" data-status="in_progress" type="button">處理中</button><button class="dsr-status" data-status="resolved" type="button">已解決</button></div></article>`).join('') : '目前沒有回報。';
       list.querySelectorAll('.dsr-status').forEach(button => button.addEventListener('click', async () => {
         const article = button.closest('.dsr-report');
         button.disabled = true;

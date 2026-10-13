@@ -2,6 +2,10 @@ const encoder = new TextEncoder();
 const SESSION_COOKIE = 'downloadstarry_session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const ECHO_STARRY_ORIGIN = 'https://echo.starry.phd';
+const ADMIN_EMAIL = 'yukidu@gmail.com';
+const EMAIL_FROM = 'notifications@starry.phd';
+const REPORT_WINDOW_MS = 10 * 60 * 1000;
+const REPORT_WINDOW_MAX = 6;
 const schemaReady = new WeakMap();
 
 async function hash(value) {
@@ -79,7 +83,21 @@ async function ensureSchema(env) {
         resolvedAt INTEGER
       )`),
       db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_reports_status_created ON downloadstarry_reports(status, createdAt DESC)'),
-      db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_reports_user_created ON downloadstarry_reports(userId, createdAt DESC)')
+      db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_reports_user_created ON downloadstarry_reports(userId, createdAt DESC)'),
+      db.prepare(`CREATE TABLE IF NOT EXISTS downloadstarry_report_notifications (
+        reportId TEXT PRIMARY KEY,
+        emailStatus TEXT NOT NULL DEFAULT 'not_configured',
+        lineStatus TEXT NOT NULL DEFAULT 'not_configured',
+        emailError TEXT NOT NULL DEFAULT '',
+        lineError TEXT NOT NULL DEFAULT '',
+        updatedAt INTEGER NOT NULL
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS downloadstarry_report_rate (
+        reporterKey TEXT NOT NULL,
+        windowStart INTEGER NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (reporterKey, windowStart)
+      )`)
     ]);
     schemaReady.set(db, task);
     task.catch(() => schemaReady.delete(db));
@@ -112,7 +130,7 @@ function publicMember(row) {
     residence: String(row.residence || ''),
     birthday: String(row.birthday || ''),
     motto: String(row.motto || ''),
-    isAdmin: Boolean(row.isAdmin) || String(row.primaryEmail || '').toLowerCase() === 'yukidu@gmail.com'
+    isAdmin: Boolean(row.isAdmin) || String(row.primaryEmail || '').toLowerCase() === ADMIN_EMAIL
   };
 }
 
@@ -168,22 +186,16 @@ async function callback(request, env) {
     const data = await response.json().catch(() => ({}));
     const userId = String(data?.user?.id || '');
     if (!response.ok || !userId) return Response.redirect(`${new URL(request.url).origin}/?starry=error`, 302);
-
     await ensureSchema(env);
     const member = await centralMember(env.STARRY_ID_DB, userId);
-    if (!member || String(member.status || 'active') !== 'active') {
-      return Response.redirect(`${new URL(request.url).origin}/?starry=error`, 302);
-    }
+    if (!member || String(member.status || 'active') !== 'active') return Response.redirect(`${new URL(request.url).origin}/?starry=error`, 302);
     const session = await createAppSession(env, userId);
-    return new Response(null, {
-      status: 302,
-      headers: {
-        'Location': `${new URL(request.url).origin}/?starry=login`,
-        'Set-Cookie': sessionCookie(session.token),
-        'Cache-Control': 'no-store',
-        'Referrer-Policy': 'no-referrer'
-      }
-    });
+    return new Response(null, {status: 302, headers: {
+      'Location': `${new URL(request.url).origin}/?starry=login`,
+      'Set-Cookie': sessionCookie(session.token),
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer'
+    }});
   } catch {
     return Response.redirect(`${new URL(request.url).origin}/?starry=error`, 302);
   }
@@ -203,31 +215,119 @@ function cleanText(value, max) {
   return String(value ?? '').trim().slice(0, max);
 }
 
-async function createReport(request, env, member) {
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function enforceReportRate(request, env, member) {
+  const now = Date.now();
+  const windowStart = Math.floor(now / REPORT_WINDOW_MS) * REPORT_WINDOW_MS;
+  const raw = member?.id
+    ? `member:${member.id}`
+    : `guest:${request.headers.get('CF-Connecting-IP') || 'unknown'}:${request.headers.get('User-Agent') || ''}`;
+  const reporterKey = await hash(raw);
+  const row = await env.STARRY_ID_DB.prepare(`
+    INSERT INTO downloadstarry_report_rate (reporterKey, windowStart, count) VALUES (?, ?, 1)
+    ON CONFLICT(reporterKey, windowStart) DO UPDATE SET count = count + 1
+    RETURNING count
+  `).bind(reporterKey, windowStart).first();
+  await env.STARRY_ID_DB.prepare('DELETE FROM downloadstarry_report_rate WHERE windowStart < ?')
+    .bind(windowStart - REPORT_WINDOW_MS * 6).run().catch(() => undefined);
+  return Number(row?.count || 0) <= REPORT_WINDOW_MAX;
+}
+
+function reportText(report, member) {
+  return [
+    '【繁星下載｜無法下載回報】',
+    `回報編號：${report.id}`,
+    `時間：${report.reportedAt}`,
+    `來源：${report.source === 'parsed' ? '解析結果按鈕' : '手動回報'}`,
+    `網址：${report.url || '未填'}`,
+    `身分：${member ? `${member.name || '會員'} / ${member.email || ''} / ${member.rank || ''}` : '訪客（未登入）'}`,
+    `備註：${report.note || '無'}`,
+    '',
+    '管理網址：https://download.starry.phd'
+  ].join('\n');
+}
+
+async function sendEmailNotification(env, report, member) {
+  if (!env.REPORT_EMAIL?.send) return {status: 'not_configured', error: 'binding unavailable'};
+  try {
+    const text = reportText(report, member);
+    const result = await env.REPORT_EMAIL.send({
+      to: ADMIN_EMAIL,
+      from: EMAIL_FROM,
+      subject: `[繁星下載] 無法下載回報 ${report.id.slice(0, 8)}`,
+      text,
+      html: `<h2>繁星下載｜無法下載回報</h2><p><strong>回報編號：</strong>${escapeHtml(report.id)}</p><p><strong>時間：</strong>${escapeHtml(report.reportedAt)}</p><p><strong>來源：</strong>${report.source === 'parsed' ? '解析結果按鈕' : '手動回報'}</p><p><strong>網址：</strong>${report.url ? `<a href="${escapeHtml(report.url)}">${escapeHtml(report.url)}</a>` : '未填'}</p><p><strong>身分：</strong>${member ? `${escapeHtml(member.name || '會員')} / ${escapeHtml(member.email || '')} / ${escapeHtml(member.rank || '')}` : '訪客（未登入）'}</p><p><strong>備註：</strong>${escapeHtml(report.note || '無')}</p>`
+    });
+    return {status: 'sent', error: '', messageId: String(result?.messageId || '')};
+  } catch (error) {
+    return {status: 'failed', error: cleanText(error?.code || error?.message || 'email failed', 180)};
+  }
+}
+
+async function sendLineNotification(env, report, member) {
+  const token = String(env.LINE_CHANNEL_ACCESS_TOKEN || '').trim();
+  const to = String(env.LINE_ADMIN_USER_ID || '').trim();
+  if (!token || !to) return {status: 'not_configured', error: 'LINE secrets unavailable'};
+  try {
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({to, messages: [{type: 'text', text: reportText(report, member).slice(0, 4800)}]})
+    });
+    if (!response.ok) return {status: 'failed', error: `LINE HTTP ${response.status}`};
+    return {status: 'sent', error: ''};
+  } catch (error) {
+    return {status: 'failed', error: cleanText(error?.message || 'LINE failed', 180)};
+  }
+}
+
+async function saveNotificationState(env, reportId, email, line) {
+  await env.STARRY_ID_DB.prepare(`
+    INSERT INTO downloadstarry_report_notifications (reportId, emailStatus, lineStatus, emailError, lineError, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(reportId) DO UPDATE SET emailStatus=excluded.emailStatus, lineStatus=excluded.lineStatus,
+      emailError=excluded.emailError, lineError=excluded.lineError, updatedAt=excluded.updatedAt
+  `).bind(reportId, email.status, line.status, email.error || '', line.error || '', Date.now()).run();
+}
+
+async function createReport(request, env, member = null) {
+  if (!await enforceReportRate(request, env, member)) return json({error: '回報次數太頻繁，請稍後再試'}, 429);
   const body = await request.json().catch(() => ({}));
   const source = body.source === 'parsed' ? 'parsed' : 'manual';
   const url = cleanText(body.url, 4096);
   const reportedAt = cleanText(body.reportedAt, 64);
   const note = cleanText(body.note, 2000);
   if (source === 'parsed' && !url) return json({error: '缺少目前網址'}, 400);
+  if (url && !/^https?:\/\//i.test(url)) return json({error: '網址格式不正確'}, 400);
   if (!reportedAt) return json({error: '請填寫日期時間'}, 400);
   const now = Date.now();
   const id = crypto.randomUUID();
+  const report = {id, source, url, reportedAt, note};
   await env.STARRY_ID_DB.prepare(`INSERT INTO downloadstarry_reports
     (id, userId, source, url, reportedAt, note, status, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?)`)
-    .bind(id, member.id, source, url, reportedAt, note, now, now).run();
-  return json({success: true, id, status: 'new'});
+    .bind(id, member?.id || '', source, url, reportedAt, note, now, now).run();
+  const [email, line] = await Promise.all([
+    sendEmailNotification(env, report, member),
+    sendLineNotification(env, report, member)
+  ]);
+  await saveNotificationState(env, id, email, line).catch(() => undefined);
+  return json({success: true, id, status: 'new', notifications: {email: email.status, line: line.status}, authenticated: Boolean(member)});
 }
 
 async function listReports(env) {
   const {results} = await env.STARRY_ID_DB.prepare(`
     SELECT r.id, r.source, r.url, r.reportedAt, r.note, r.status, r.createdAt, r.updatedAt,
-      r.resolvedBy, r.resolvedAt, u.id AS userId, u.primaryEmail AS email,
-      p.name, p.center, p.rank, p.approvedRank
+      r.resolvedBy, r.resolvedAt, r.userId, u.primaryEmail AS email,
+      p.name, p.center, p.rank, p.approvedRank,
+      n.emailStatus, n.lineStatus
     FROM downloadstarry_reports r
-    JOIN users u ON u.id = r.userId
+    LEFT JOIN users u ON u.id = r.userId
     LEFT JOIN profiles p ON p.userId = r.userId
+    LEFT JOIN downloadstarry_report_notifications n ON n.reportId = r.id
     ORDER BY CASE r.status WHEN 'new' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END, r.createdAt DESC
     LIMIT 300
   `).all();
@@ -253,9 +353,7 @@ export async function handleStarryRequest(request, env) {
   const isStarryPath = path === '/auth/callback' || path.startsWith('/api/auth/starry/') || path === '/api/reports' || /^\/api\/reports\/[^/]+\/status$/.test(path);
   if (!isStarryPath) return null;
 
-  if (path === '/api/auth/starry/login' && method === 'GET') {
-    return Response.redirect(`${ECHO_STARRY_ORIGIN}/auth/downloadstarry`, 302);
-  }
+  if (path === '/api/auth/starry/login' && method === 'GET') return Response.redirect(`${ECHO_STARRY_ORIGIN}/auth/downloadstarry`, 302);
   if (path === '/auth/callback' && method === 'GET') return callback(request, env);
 
   const crossSite = rejectCrossSite(request);
@@ -271,10 +369,13 @@ export async function handleStarryRequest(request, env) {
   }
   if (path === '/api/auth/starry/logout' && method === 'POST') return logout(request, env);
 
+  if (path === '/api/reports' && method === 'POST') {
+    const member = await sessionMember(request, env);
+    return createReport(request, env, member);
+  }
+
   const member = await sessionMember(request, env);
   if (!member) return json({error: '請先登入 Starry ID'}, 401);
-
-  if (path === '/api/reports' && method === 'POST') return createReport(request, env, member);
   if (path === '/api/reports' && method === 'GET') {
     if (!member.isAdmin) return json({error: '只有管理員可查看回報'}, 403);
     return listReports(env);
