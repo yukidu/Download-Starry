@@ -89,10 +89,9 @@ test('Worker 支援匿名工單、防濫用、Email 與 LINE 通知', async () =
 
 test('通知失敗不會回滾已建立的工單', async () => {
   const worker = await read('cloudflare/starry.js');
-  const insertAt = worker.indexOf('INSERT INTO downloadstarry_reports');
-  const notifyAt = worker.indexOf('sendEmailNotification(env, report, member)');
-  assert.ok(insertAt >= 0 && notifyAt > insertAt);
-  assert.match(worker, /saveNotificationState\(env, id, email, line\)\.catch/);
+  const createReport = worker.match(/async function createReport[\s\S]*?\n}\n\nasync function listReports/)?.[0] || '';
+  assert.match(createReport, /INSERT INTO downloadstarry_reports[\s\S]*?\.run\(\);[\s\S]*?sendEmailNotification\(env, report, member\)/);
+  assert.match(createReport, /saveNotificationState\(env, id, email, line\)\.catch/);
 });
 
 test('回報寫入前拒絕跨站 POST', async () => {
