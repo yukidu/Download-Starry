@@ -72,7 +72,7 @@ test('service worker keeps API and static assets out of runtime cache intercepti
 test('bootstrap preloads current core in parallel without Capacitor dependency', async () => {
   const bootstrap = await text('static/app.js');
   const packageJson = JSON.parse(await text('package.json'));
-  assert.match(bootstrap, /rel = 'preload'/);
+  assert.match(bootstrap, /\.rel\s*=\s*['"]preload['"]/);
   assert.match(bootstrap, /Promise\.all\(\[/);
   assert.match(bootstrap, /\/static\/platform\.js/);
   assert.match(bootstrap, /\/static\/api\.js/);
