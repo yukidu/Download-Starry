@@ -21,7 +21,7 @@ test('網站 Logo 與 PWA 安裝圖示共用同一個 App Icon', async () => {
   assert.ok(manifest.icons.length >= 2);
   assert.ok(manifest.icons.every(item => item.src === iconSrc));
   assert.match(app, /background:url\(\/static\/app-icon\.svg\?v=4\) center\/cover/);
-  assert.match(app, /brandMark\.replaceChildren\(\)/);
+  assert.match(app, /mark\.replaceChildren\(\)/);
   assert.match(icon, /id="download-arrow"/);
   assert.match(icon, /id="play-mark"/);
   assert.match(icon, /id="star-mark"/);
