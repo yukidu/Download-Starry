@@ -115,5 +115,28 @@
       });
     },
   });
-  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, lifecycle, pwa});
+
+  const notifications = Object.freeze({
+    get isSupported() {
+      const adapter = native()?.notifications;
+      return Boolean(adapter?.requestPermission || (!runtime.isCapacitor && typeof window.Notification !== 'undefined'));
+    },
+    get permission() {
+      const adapter = native()?.notifications;
+      if (typeof adapter?.permission === 'string') return adapter.permission;
+      if (!runtime.isCapacitor && typeof window.Notification !== 'undefined') return Notification.permission;
+      return adapter?.requestPermission ? 'default' : 'unsupported';
+    },
+    async requestPermission() {
+      const adapter = native()?.notifications;
+      if (adapter?.requestPermission) {
+        const result = await adapter.requestPermission();
+        return String(result?.permission || result?.display || result || 'default');
+      }
+      if (!runtime.isCapacitor && typeof window.Notification !== 'undefined') return Notification.requestPermission();
+      return 'unsupported';
+    },
+  });
+
+  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, lifecycle, pwa, notifications});
 })();
