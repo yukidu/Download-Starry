@@ -130,7 +130,9 @@ export async function handleCentralSso(request, env) {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
   if (url.pathname === '/api/auth/starry/login' && method === 'GET') {
-    return Response.redirect(`${STARRY_ID_ORIGIN}/auth/downloadstarry`, 302);
+    const chooseAccount = url.searchParams.get('choose') === '1';
+    const suffix = chooseAccount ? '?choose=1' : '';
+    return Response.redirect(`${STARRY_ID_ORIGIN}/auth/downloadstarry${suffix}`, 302);
   }
   if (url.pathname === '/auth/callback' && method === 'GET') {
     if (!env.STARRY_ID_DB) return json({error: 'Starry ID 中央會員服務尚未連線'}, 503);

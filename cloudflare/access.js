@@ -1,7 +1,7 @@
 import {handleStarryRequest} from './starry.js';
 
 const encoder = new TextEncoder();
-const PAGE_ROUTES = new Set(['/', '/report', '/account', '/install']);
+const PAGE_ROUTES = new Set(['/', '/report', '/account', '/install', '/history']);
 
 export async function digest(value) {
   const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value)));

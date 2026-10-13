@@ -8,10 +8,10 @@
     remove(key) { try { sessionStorage.removeItem(key); } catch (_) {} },
   });
   const auth = Object.freeze({
-    login() {
+    login({chooseAccount = true} = {}) {
       const adapter = native()?.auth;
-      if (adapter?.login) return adapter.login({provider: 'google', account: 'starry-id'});
-      window.location.assign('/api/auth/starry/login');
+      if (adapter?.login) return adapter.login({provider: 'google', account: 'starry-id', chooseAccount});
+      window.location.assign(`/api/auth/starry/login${chooseAccount ? '?choose=1' : ''}`);
     },
   });
   window.DownloadStarryMemberPlatform = Object.freeze({session, auth});

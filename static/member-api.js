@@ -28,5 +28,8 @@
     async updateReportStatus(id, status) {
       return readJson(await fetch(endpoint(`/api/reports/${encodeURIComponent(id)}/status`), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}), '無法更新回報狀態');
     },
+    async downloadHistory() {
+      return readJson(await fetch(endpoint('/api/download-history'), {cache:'no-store'}), '無法讀取下載紀錄');
+    },
   });
 })();
