@@ -5,9 +5,11 @@
   const api = window.DownloadStarryMemberAPI;
   const memberPlatform = window.DownloadStarryMemberPlatform;
   const platform = window.SaveVideoPlatform;
+  const notifications = platform?.notifications;
 
   function supported() {
-    return Boolean('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+    if (platform?.runtime?.isCapacitor) return Boolean(notifications?.isSupported && window.SaveVideoNative?.notifications?.ensurePushSubscription);
+    return Boolean(notifications?.isSupported && 'serviceWorker' in navigator && 'PushManager' in window);
   }
 
   function base64UrlToBytes(value) {
@@ -21,7 +23,7 @@
     const style = document.createElement('style');
     style.id = 'downloadstarry-repair-notify-style';
     style.textContent = `
-.dsr-repair-notify{border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line));background:color-mix(in srgb,var(--accent) 10%,var(--soft-bg));color:var(--ink)}.dsr-repair-notify.is-active{border-color:color-mix(in srgb,var(--accent) 70%,var(--line));background:color-mix(in srgb,var(--accent) 18%,var(--soft-bg));color:var(--accent)}.dsr-member-only{display:grid;gap:13px;justify-items:start}.dsr-member-only h2{margin:0;font-size:20px}.dsr-member-only p{margin:0;color:var(--muted);line-height:1.7}.dsr-install-backdrop{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(5,8,24,.60);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.dsr-install-backdrop[hidden]{display:none!important}.dsr-install-card{width:min(100%,390px);padding:22px;border:1px solid var(--line);border-radius:20px;background:var(--panel-bg);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.32)}.dsr-install-card h2{margin:0 0 8px;font-size:20px}.dsr-install-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}.dsr-install-card .dsr-actions{margin-top:16px}@media(max-width:560px){.dsr-repair-notify{min-height:40px}}
+.dsr-repair-notify{border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line));background:color-mix(in srgb,var(--accent) 10%,var(--soft-bg));color:var(--ink)}.dsr-repair-notify.is-active{border-color:color-mix(in srgb,var(--accent) 70%,var(--line));background:color-mix(in srgb,var(--accent) 18%,var(--soft-bg));color:var(--accent)}.dsr-member-only{display:grid;gap:13px;justify-items:start}.dsr-member-only h2{margin:0;font-size:20px}.dsr-member-only p{margin:0;color:var(--muted);line-height:1.7}.dsr-dialog-backdrop{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(5,8,24,.60);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.dsr-dialog-backdrop[hidden]{display:none!important}.dsr-dialog-card{width:min(100%,390px);padding:22px;border:1px solid var(--line);border-radius:20px;background:var(--panel-bg);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.32)}.dsr-dialog-card h2{margin:0 0 8px;font-size:20px}.dsr-dialog-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}.dsr-dialog-card p+p{margin-top:8px}.dsr-dialog-card .dsr-actions{margin-top:16px}.dsr-dialog-card .dsr-actions>*{min-width:0}.dsr-permission-steps{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.75}.dsr-success-card{text-align:center}.dsr-success-card .dsr-primary{width:100%}@media(max-width:560px){.dsr-repair-notify{min-height:40px}}
 `;
     document.head.appendChild(style);
   }
@@ -31,9 +33,9 @@
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'dsr-install-guide';
-      modal.className = 'dsr-install-backdrop';
+      modal.className = 'dsr-dialog-backdrop';
       modal.innerHTML = `
-        <section class="dsr-install-card" role="dialog" aria-modal="true" aria-labelledby="dsr-install-title">
+        <section class="dsr-dialog-card" role="dialog" aria-modal="true" aria-labelledby="dsr-install-title">
           <h2 id="dsr-install-title">先加入主畫面才能接收通知</h2>
           <p>iPhone／iPad 的 Web Push 規則要求先用 Safari 將「繁星下載」加入主畫面，再從主畫面的 App 開啟並允許通知。Apple 不允許網站自動或強制安裝，因此最後的「加入主畫面」必須由你本人確認。</p>
           <div class="dsr-actions"><button id="dsr-install-help" class="dsr-primary" type="button">查看安裝方式</button><button id="dsr-install-close" class="dsr-secondary" type="button">知道了</button></div>
@@ -46,24 +48,90 @@
     modal.hidden = false;
   }
 
+  function showPermissionGuide(blocked = false) {
+    let modal = document.querySelector('#dsr-permission-guide');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'dsr-permission-guide';
+      modal.className = 'dsr-dialog-backdrop';
+      modal.innerHTML = `
+        <section class="dsr-dialog-card" role="dialog" aria-modal="true" aria-labelledby="dsr-permission-title">
+          <h2 id="dsr-permission-title">請允許繁星下載傳送通知</h2>
+          <p id="dsr-permission-copy"></p>
+          <ol class="dsr-permission-steps">
+            <li>點 Chrome 網址列左側的網站設定圖示、鎖頭或被劃線的鈴鐺。</li>
+            <li>找到「通知」，改成「允許」。</li>
+            <li>回到繁星下載，再按一次「修復後通知我」。</li>
+          </ol>
+          <p>Android Chrome 不需要先安裝到桌面；只要網站通知權限設為允許即可。</p>
+          <div class="dsr-actions"><button id="dsr-permission-close" class="dsr-primary" type="button">知道了</button></div>
+        </section>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#dsr-permission-close').addEventListener('click', () => { modal.hidden = true; });
+    }
+    modal.querySelector('#dsr-permission-copy').textContent = blocked
+      ? '目前 Chrome 已封鎖這個網站的通知，因此系統不會再次跳出允許視窗。請先在網站權限中改成允許。'
+      : 'Chrome 這次沒有完成通知授權。若沒有看到系統允許視窗，請直接從網址列的網站權限開啟通知。';
+    modal.hidden = false;
+  }
+
+  function showReportSuccess(detail) {
+    let modal = document.querySelector('#dsr-report-success');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'dsr-report-success';
+      modal.className = 'dsr-dialog-backdrop';
+      modal.innerHTML = `
+        <section class="dsr-dialog-card dsr-success-card" role="dialog" aria-modal="true" aria-labelledby="dsr-success-title">
+          <h2 id="dsr-success-title">已回報完成</h2>
+          <p id="dsr-success-copy"></p>
+          <div class="dsr-actions"><button id="dsr-success-close" class="dsr-primary" type="button">關閉</button></div>
+        </section>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#dsr-success-close').addEventListener('click', () => location.assign('/'));
+    }
+    modal.querySelector('#dsr-success-copy').textContent = detail || '管理員已收到你的回報。';
+    modal.hidden = false;
+    modal.querySelector('#dsr-success-close')?.focus();
+  }
+
   async function ensureSubscription() {
     if (platform?.runtime?.isIOS && !platform.runtime.isStandalone) {
       showInstallGuide();
       throw new Error('iPhone／iPad 請先將繁星下載加入主畫面，再從主畫面的 App 開啟此功能。');
     }
     if (!supported()) throw new Error('目前瀏覽器不支援手機系統通知。');
-    if (Notification.permission === 'denied') {
-      throw new Error('通知權限已被封鎖，請到瀏覽器或系統通知設定重新允許。');
+
+    const currentPermission = notifications?.permission || 'unsupported';
+    if (currentPermission === 'denied') {
+      showPermissionGuide(true);
+      throw new Error('通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。');
     }
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') throw new Error('你尚未允許系統通知。');
+    if (currentPermission === 'default') {
+      const permission = await notifications.requestPermission();
+      if (permission !== 'granted') {
+        showPermissionGuide(permission === 'denied');
+        throw new Error(permission === 'denied'
+          ? '通知已被瀏覽器封鎖，請先到網站權限把「通知」改成允許。'
+          : '你尚未允許系統通知，請完成網站通知權限設定。');
+      }
+    } else if (currentPermission !== 'granted') {
+      throw new Error('目前環境無法取得系統通知權限。');
     }
 
     const settings = await api.repairConfig();
     if (!settings.configured || !settings.publicKey) {
       throw new Error('系統通知尚未完成伺服器設定。');
     }
+
+    if (platform?.runtime?.isCapacitor) {
+      const nativePush = window.SaveVideoNative?.notifications?.ensurePushSubscription;
+      if (!nativePush) throw new Error('目前原生 App 尚未啟用通知介面。');
+      const nativeSubscription = await nativePush({publicKey: settings.publicKey});
+      await api.repairSubscribe(nativeSubscription);
+      return nativeSubscription;
+    }
+
     await platform?.pwa?.registerServiceWorker?.();
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
@@ -121,7 +189,7 @@
 
     const renderNotify = () => {
       notifyButton.classList.toggle('is-active', notifyRequested);
-      notifyButton.textContent = notifyRequested ? '✓ 已設定修復後通知我' : '修復後通知我';
+      notifyButton.textContent = notifyRequested ? '✓ 已訂閱修復通知' : '修復後通知我';
       notifyButton.setAttribute('aria-pressed', String(notifyRequested));
     };
     renderNotify();
@@ -136,12 +204,12 @@
       }
       enabling = true;
       notifyButton.disabled = true;
-      message.textContent = '正在啟用修復完成通知…';
+      message.textContent = '正在要求系統通知權限…';
       try {
         await ensureSubscription();
         notifyRequested = true;
         renderNotify();
-        message.textContent = '已啟用。送出回報後，管理員標記「已修復」時會通知這支裝置。';
+        message.textContent = '已訂閱修復通知。送出回報後，管理員標記「已修復」時會通知這支裝置。';
       } catch (error) {
         notifyRequested = false;
         renderNotify();
@@ -170,16 +238,17 @@
       message.textContent = '正在送出並通知管理員…';
       try {
         const result = await api.createReport({source, url: reportUrl, reportedAt, note: reportNote});
+        let detail = '管理員已收到你的回報。';
         if (notifyRequested) {
           try {
             await api.repairWatch(result.id);
-            message.textContent = '已送出給管理員；修復完成後會通知這支裝置。';
+            detail = '管理員已收到你的回報；修復完成後會通知這支裝置。';
           } catch (watchError) {
-            message.textContent = `回報已送出，但修復通知沒有完成：${watchError.message || '請稍後再試'}`;
+            detail = `回報已送出，但修復通知尚未完成：${watchError.message || '請稍後再試'}`;
           }
-        } else {
-          message.textContent = '已送出給管理員，謝謝你的回報。';
         }
+        message.textContent = '已回報完成。';
+        showReportSuccess(detail);
       } catch (error) {
         message.textContent = error.message || '回報失敗，請稍後再試';
       } finally {
