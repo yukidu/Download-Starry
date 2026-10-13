@@ -1,6 +1,6 @@
 import {Container} from '@cloudflare/containers';
 import {digest, handleRequest} from './access.js';
-import {handlePushRequest, notifyReportCreated} from './push.js';
+import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -21,16 +21,25 @@ export class VideoDownloader extends Container {
 }
 
 async function fetchHandler(request, env, ctx) {
-  const pushResponse = await handlePushRequest(request, env).catch(() => null);
-  if (pushResponse) return pushResponse;
-
   const url = new URL(request.url);
+  if (url.pathname.startsWith('/api/push/')) {
+    try {
+      return await handlePushRequest(request, env);
+    } catch {
+      return Response.json({error: '系統通知服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    }
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/reports') {
     const reportRequest = request.clone();
     const response = await handleRequest(request, env);
     if (response.ok) {
       const report = await reportRequest.json().catch(() => ({}));
-      ctx?.waitUntil?.(notifyReportCreated(env, report).catch(() => undefined));
+      const result = await response.clone().json().catch(() => ({}));
+      ctx?.waitUntil?.((async () => {
+        const push = await notifyReportCreated(env, report).catch(error => ({status: 'failed', error: String(error?.message || error)}));
+        await saveReportPushState(env, result?.id, push);
+      })());
     }
     return response;
   }
