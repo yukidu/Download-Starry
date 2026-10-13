@@ -2,17 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {handleStarryRequest} from '../cloudflare/starry.js';
+import {allowedRoute} from '../cloudflare/access.js';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('固定置頂工具列與漢堡選單都提供完整雲端功能', async () => {
+test('置頂主工具列只增加燈光與登入，完整功能留在漢堡選單', async () => {
   const toolbar = await read('static/toolbar.js');
-  for (const text of ['首頁','貼網址','Starry ID','回報錯誤','安裝']) assert.match(toolbar, new RegExp(text));
-  assert.match(toolbar, /starry-member-button/);
-  assert.match(toolbar, /menu-report-button/);
-  assert.match(toolbar, /install-app-button/);
+  assert.match(toolbar, /top-theme-toggle/);
+  assert.match(toolbar, /top-login-button/);
+  assert.match(toolbar, /<span>登入<\/span>/);
+  for (const id of ['starry-member-button','menu-report-button','install-app-button']) assert.match(toolbar, new RegExp(id));
+  for (const id of ['top-home-button','top-url-button','top-starry-member-button','top-report-button','top-install-button']) assert.doesNotMatch(toolbar, new RegExp(id));
   assert.match(toolbar, /position:sticky!important/);
-  assert.match(toolbar, /overflow-x:auto/);
+  assert.doesNotMatch(toolbar, /overflow-x:auto/);
 });
 
 test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () => {
@@ -22,23 +24,43 @@ test('首頁依需求調整 CTA、網址按鈕順序與暗色 Logo', async () =>
   assert.match(toolbar, /outline:1px solid #263158/);
 });
 
-test('會員與回報深層模組仍保持互動後 lazy-load', async () => {
+test('會員與回報深層模組維持 lazy-load', async () => {
   const app = await read('static/app.js');
   const toolbar = await read('static/toolbar.js');
   const shell = await read('static/member-shell.js');
   assert.doesNotMatch(app, /member-shell\.js|member-report\.js|member-api\.js|member-platform\.js/);
   assert.match(toolbar, /load\('\/static\/member-shell\.js'\)/);
   for (const file of ['member-report.js','member-api.js','member-platform.js']) assert.match(shell, new RegExp(`/static/${file.replace('.', '\\.')}`));
+  assert.match(shell, /Object\.freeze\(\{mount\}\)/);
 });
 
-test('回報錯誤不要求登入，Starry ID 帳戶頁才需要登入', async () => {
+test('回報與登入改為原生頁，不使用 dialog 或 alert', async () => {
   const report = await read('static/member-report.js');
+  assert.match(report, /downloadstarry-page/);
+  assert.match(report, /location\.pathname === '\/report'/);
+  assert.match(report, /Starry ID 登入/);
   assert.match(report, /訪客（不需登入）/);
   assert.match(report, /不需登入即可送出/);
-  assert.match(report, /const data = await session\(\);/);
+  assert.doesNotMatch(report, /createElement\('dialog'\)|showModal|window\.alert|\balert\(/);
+});
+
+test('所有原生功能頁由 Cloudflare 路由支援且共用固定 Header', async () => {
+  const access = await read('cloudflare/access.js');
+  const toolbar = await read('static/toolbar.js');
+  for (const path of ['/report','/account','/install']) {
+    assert.equal(allowedRoute(path, 'GET'), true);
+    assert.match(access, new RegExp(path.replace('/', '\\/')));
+  }
+  assert.match(access, /forwardedUrl\.pathname = '\/'/);
+  assert.match(toolbar, /location\.pathname==='\/account'\|\|location\.pathname==='\/report'/);
+});
+
+test('回報錯誤不要求登入，登入頁才啟動 Google 登入', async () => {
+  const report = await read('static/member-report.js');
   assert.match(report, /const user = data\?\.authenticated \? data\.user : null/);
-  assert.match(report, /async function account\(\)/);
-  assert.match(report, /prepareMember\(\{mode: 'account'\}\)/);
+  assert.match(report, /api\.createReport/);
+  assert.match(report, /platform\.auth\.login\(\)/);
+  assert.match(report, /下載與回報錯誤仍可在未登入狀態使用/);
 });
 
 test('Starry ID 使用 lazy platform auth/session storage，不把會員 token 放 localStorage', async () => {
@@ -60,12 +82,13 @@ test('回報資料與會員 API 集中在 lazy API layer', async () => {
   assert.doesNotMatch(report, /fetch\(/);
 });
 
-test('parsed 回報自動帶網址時間，manual 保持欄位空白', async () => {
+test('parsed 回報用 session draft 帶入網址時間，manual 保持空白', async () => {
+  const toolbar = await read('static/toolbar.js');
   const report = await read('static/member-report.js');
-  assert.match(report, /source === 'parsed'/);
-  assert.match(report, /time\.value = parsed \?/);
-  assert.match(report, /url\.readOnly = parsed/);
-  assert.match(report, /time\.readOnly = parsed/);
+  assert.match(toolbar, /downloadstarry\.report-draft\.v2/);
+  assert.match(toolbar, /\/report\?source=parsed/);
+  assert.match(report, /params\.get\('source'\) === 'parsed'/);
+  assert.match(report, /platform\.session\.get\(DRAFT_KEY\)/);
   assert.match(report, /目前以訪客身分回報/);
   assert.match(report, /請手動填寫網址、日期時間與備註/);
 });
