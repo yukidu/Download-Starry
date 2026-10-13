@@ -1,3 +1,5 @@
+import {handleStarryRequest} from './starry.js';
+
 const encoder = new TextEncoder();
 
 export async function digest(value) {
@@ -40,6 +42,13 @@ export function allowedRoute(path, method) {
 }
 
 export async function handleRequest(request, env) {
+  try {
+    const starryResponse = await handleStarryRequest(request, env);
+    if (starryResponse) return starryResponse;
+  } catch {
+    return errorResponse('Starry ID 會員服務暫時無法連線，請稍後重試', 503);
+  }
+
   const rejected = await authorize(request, env);
   if (rejected) return rejected;
   if (!allowedRoute(new URL(request.url).pathname, request.method)) {
