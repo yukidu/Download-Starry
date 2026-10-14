@@ -16,14 +16,22 @@
   box-sizing:border-box!important;
 }
 #video-download-actions .download-action-grid{
+  display:grid!important;
   width:100%!important;
   max-width:none!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
   column-gap:10px!important;
   row-gap:12px!important;
+  justify-items:stretch!important;
+  align-items:stretch!important;
+  box-sizing:border-box!important;
 }
 #video-download-actions .resource-action-group{
   width:100%!important;
   min-width:0!important;
+  max-width:none!important;
+  justify-self:stretch!important;
+  box-sizing:border-box!important;
   padding:10px!important;
   border-radius:20px!important;
   box-shadow:0 10px 26px rgba(28,35,76,.08)!important;
@@ -49,19 +57,26 @@
   color:#2a79bf!important;
 }
 #video-download-actions .resource-action-group-buttons{
+  display:grid!important;
   width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:8px!important;
-  justify-content:center!important;
+  justify-content:stretch!important;
+  align-items:stretch!important;
+  box-sizing:border-box!important;
 }
 #video-download-actions .resource-action-group .download-action-button{
   min-height:72px!important;
   width:100%!important;
+  min-width:0!important;
   max-width:none!important;
   padding:9px 4px!important;
   border-radius:16px!important;
   font-size:14px!important;
   justify-self:stretch!important;
+  box-sizing:border-box!important;
 }
 #video-download-actions .resource-action-group-video .download-action-button{
   background:linear-gradient(145deg,#7447d7,#5d43c7)!important;
@@ -141,21 +156,26 @@
 
   const syncActionWidth = () => {
     const actions = document.getElementById('video-download-actions');
+    const grid = actions?.querySelector('.download-action-grid');
+    const audioGroup = actions?.querySelector('.resource-action-group-audio');
     const clearButton = document.getElementById('clear-url-button');
     const lastButton = document.getElementById('share-audio-button');
-    if (!actions || !clearButton || !lastButton) return;
+    if (!actions || !grid || !audioGroup || !clearButton || !lastButton) return;
 
     actions.style.width = '100%';
+    grid.style.width = '100%';
+
     const actionRect = actions.getBoundingClientRect();
     const clearRect = clearButton.getBoundingClientRect();
     const lastRect = lastButton.getBoundingClientRect();
+    const audioRect = audioGroup.getBoundingClientRect();
     const viewportRight = document.documentElement.clientWidth - 10;
     const targetRight = Math.min(clearRect.right, viewportRight);
-    const delta = targetRight - lastRect.right;
-    if (Math.abs(delta) < 1) return;
+    const rightInset = Math.max(0, audioRect.right - lastRect.right);
+    const desired = Math.max(240, Math.min(targetRight - actionRect.left + rightInset, viewportRight - actionRect.left));
 
-    const desired = Math.max(240, Math.min(actionRect.width + delta, viewportRight - actionRect.left));
     actions.style.width = `${Math.floor(desired)}px`;
+    grid.style.width = '100%';
   };
 
   const scheduleSync = () => requestAnimationFrame(() => requestAnimationFrame(syncActionWidth));
