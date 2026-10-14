@@ -4,6 +4,8 @@ import fs from 'node:fs';
 
 const polish = fs.readFileSync(new URL('../static/result-polish.js', import.meta.url), 'utf8');
 const visualTune = fs.readFileSync(new URL('../static/result-visual-tune.js', import.meta.url), 'utf8');
+const urlFieldWrap = fs.readFileSync(new URL('../static/url-field-wrap.js', import.meta.url), 'utf8');
+const resultLoader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('four primary actions stay on one row as two full-width groups', () => {
@@ -31,6 +33,14 @@ test('video and audio sections are visually separated with larger centered contr
   assert.match(visualTune, /resource-action-group-label[\s\S]*font:900 25px/);
   assert.match(visualTune, /download-action-button[\s\S]*min-height:72px!important[\s\S]*width:100%!important/);
   assert.match(visualTune, /justify-content:center!important/);
+});
+
+test('action row widens until the last audio button aligns with the clear button', () => {
+  assert.match(visualTune, /clear-url-button/);
+  assert.match(visualTune, /share-audio-button/);
+  assert.match(visualTune, /getBoundingClientRect\(\)/);
+  assert.match(visualTune, /targetRight = Math\.min\(clearRect\.right, viewportRight\)/);
+  assert.match(visualTune, /actions\.style\.width = `\$\{Math\.floor\(desired\)\}px`/);
 });
 
 test('report button uses a pale non-black treatment', () => {
@@ -63,8 +73,19 @@ test('parsed URL is returned to the beginning of the visible input', () => {
   assert.match(polish, /observer\.observe\(result, \{attributes: true, attributeFilter: \['hidden'\]\}\)/);
 });
 
+test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
+  assert.match(app, /document\.createElement\('textarea'\)/);
+  assert.match(app, /u\.replaceWith\(t\)/);
+  assert.match(app, /url-field-wrap\.js\?5/);
+  assert.match(urlFieldWrap, /l\*3/);
+  assert.match(urlFieldWrap, /font:700 16px\/1\.35/);
+  assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
+  assert.match(urlFieldWrap, /f\.form\?\.requestSubmit\(\)/);
+});
+
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /resource-actions\.js\?v=20261015-4/);
-  assert.match(app, /result-polish\.js\?v=20261015-4/);
-  assert.match(app, /result-visual-tune\.js\?v=20261015-4/);
+  assert.match(app, /result-loader\.js\?5/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-5/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-5/);
+  assert.match(resultLoader, /result-visual-tune\.js\?v=20261015-5/);
 });
