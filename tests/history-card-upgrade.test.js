@@ -33,12 +33,14 @@ test('下載紀錄卡片提供縮圖名稱最佳畫質中文重新下載與分�
   assert.match(ui, /downloadstarry\.redownload\.v1/);
 });
 
-test('分享功能集中在 platform layer 並優先使用行動裝置原生分享', async () => {
-  const platform = await read('static/platform.js');
-  assert.match(platform, /native\(\)\?\.share\?\.share/);
-  assert.match(platform, /navigator\.share/);
-  assert.match(platform, /navigator\.clipboard\?\.writeText/);
-  assert.match(platform, /share: sharing/);
+test('分享功能集中在懶載入會員 platform layer 並優先使用行動裝置原生分享', async () => {
+  const memberPlatform = await read('static/member-platform.js');
+  const corePlatform = await read('static/platform.js');
+  assert.match(memberPlatform, /native\(\)\?\.share/);
+  assert.match(memberPlatform, /navigator\.share/);
+  assert.match(memberPlatform, /navigator\.clipboard\?\.writeText/);
+  assert.match(memberPlatform, /Object\.freeze\(\{session, auth, share\}\)/);
+  assert.doesNotMatch(corePlatform, /navigator\.share/);
 });
 
 test('重新下載會回首頁解析原網址並重新觸發原下載格式', async () => {
