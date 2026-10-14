@@ -35,6 +35,16 @@ function httpUrl(value, max = 4096) {
   return /^https?:\/\//i.test(url) ? url : '';
 }
 
+function rejectCrossSite(request) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase())) return null;
+  const origin = request.headers.get('Origin');
+  const ownOrigin = new URL(request.url).origin;
+  if ((origin && origin !== ownOrigin) || request.headers.get('Sec-Fetch-Site') === 'cross-site') {
+    return json({error: '不接受來自其他網站的操作'}, 403);
+  }
+  return null;
+}
+
 async function ensureSchema(env) {
   if (!env.STARRY_ID_DB) throw new Error('STARRY_ID_DB not bound');
   const db = env.STARRY_ID_DB;
@@ -144,6 +154,8 @@ export async function recordDownloadStart(request, env, result = {}) {
 }
 
 async function saveMetadataRequest(request, env) {
+  const crossSite = rejectCrossSite(request);
+  if (crossSite) return crossSite;
   const userId = await sessionUserId(request, env);
   if (!userId) return json({error: '請先登入 Starry ID'}, 401);
   const body = await request.json().catch(() => ({}));
