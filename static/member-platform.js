@@ -33,6 +33,27 @@
       }
       throw new Error('目前裝置不支援分享功能');
     },
+    async file(file, {title = '', text = ''} = {}) {
+      if (!(file instanceof File)) throw new Error('找不到可分享的檔案');
+      const payload = {file, files: [file], filename: file.name, title: String(title || ''), text: String(text || '')};
+      const adapter = native()?.share;
+      if (adapter?.shareFile) {
+        await adapter.shareFile(payload);
+        return {mode: 'shared'};
+      }
+      if (adapter?.shareFiles) {
+        await adapter.shareFiles(payload);
+        return {mode: 'shared'};
+      }
+      if (navigator.share) {
+        if (navigator.canShare && !navigator.canShare({files: [file]})) {
+          throw new Error('目前這台裝置不支援直接分享下載檔案');
+        }
+        await navigator.share({files: [file], title: payload.title, text: payload.text});
+        return {mode: 'shared'};
+      }
+      throw new Error('目前這台裝置不支援原生檔案分享');
+    },
   });
   window.DownloadStarryMemberPlatform = Object.freeze({session, auth, share});
 })();
