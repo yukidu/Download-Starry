@@ -65,6 +65,28 @@
     },
   });
 
+  const sharing = Object.freeze({
+    get isSupported() { return Boolean(native()?.share?.share || navigator.share || navigator.clipboard?.writeText); },
+    async share({title = '', text = '', url = ''} = {}) {
+      const adapter = native()?.share;
+      const payload = {title: String(title || ''), text: String(text || ''), url: String(url || '')};
+      if (adapter?.share) {
+        await adapter.share(payload);
+        return {mode: 'shared'};
+      }
+      if (navigator.share) {
+        await navigator.share(payload);
+        return {mode: 'shared'};
+      }
+      const fallback = payload.url || payload.text;
+      if (fallback && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fallback);
+        return {mode: 'copied'};
+      }
+      throw new Error('目前裝置不支援分享功能');
+    },
+  });
+
   const lifecycle = Object.freeze({
     onPageHide(handler) {
       window.addEventListener('pagehide', handler);
@@ -138,5 +160,5 @@
     },
   });
 
-  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, lifecycle, pwa, notifications});
+  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, share: sharing, lifecycle, pwa, notifications});
 })();
