@@ -19,8 +19,8 @@ test('新的回報 Push 僅使用最高管理員／管理員訂閱，並可從�
 test('失效 Push endpoint 會同步在管理員與修復通知資料表撤銷', async () => {
   const push = await read('cloudflare/push.js');
   const revoke = push.match(/async function markRevoked[\s\S]*?\n}\n\nasync function deliver/)?.[0] || '';
-  assert.match(revoke, /downloadstarry_push_subscriptions/);
-  assert.match(revoke, /downloadstarry_repair_push_subscriptions/);
+  assert.match(revoke, /PRIMARY_PUSH_TABLE/);
+  assert.match(revoke, /REPAIR_PUSH_TABLE/);
   assert.match(push, /response\.status === 404 \|\| response\.status === 410/);
 });
 
