@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const resourceActions = fs.readFileSync(new URL('../static/resource-actions.js', import.meta.url), 'utf8');
-const platform = fs.readFileSync(new URL('../static/platform.js', import.meta.url), 'utf8');
+const memberPlatform = fs.readFileSync(new URL('../static/member-platform.js', import.meta.url), 'utf8');
+const corePlatform = fs.readFileSync(new URL('../static/platform.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('resource action layout keeps four primary buttons in one row and report full width', () => {
@@ -26,9 +27,13 @@ test('resource share downloads the actual file before opening the device share s
   assert.match(resourceActions, /api\.fileResponse/);
   assert.match(resourceActions, /response\.blob\(\)/);
   assert.match(resourceActions, /new File\(/);
-  assert.match(resourceActions, /platform\.sharing\.shareFile/);
-  assert.match(platform, /navigator\.share/);
-  assert.match(platform, /files: \[file\]/);
+  assert.match(resourceActions, /\/static\/member-platform\.js/);
+  assert.match(resourceActions, /share\.file\(prepared\.file/);
+  assert.match(memberPlatform, /shareFile/);
+  assert.match(memberPlatform, /shareFiles/);
+  assert.match(memberPlatform, /navigator\.canShare/);
+  assert.match(memberPlatform, /navigator\.share\(\{files: \[file\]/);
+  assert.doesNotMatch(corePlatform, /navigator\.share/);
   assert.match(resourceActions, /點此分享/);
 });
 
@@ -36,6 +41,7 @@ test('resource share remains lazy-loaded until parsed result is shown', () => {
   assert.match(app, /resource-actions\.js/);
   assert.match(app, /MutationObserver/);
   assert.match(app, /\.hidden/);
+  assert.match(resourceActions, /loadSharePlatform/);
 });
 
 test('desktop media title is constrained and wraps safely', () => {
