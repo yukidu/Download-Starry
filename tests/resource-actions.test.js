@@ -17,7 +17,8 @@ test('resource share invokes native or Web Share and remains lazy-loaded', () =>
   assert.match(resourceActions, /navigator\.share/);
   assert.match(resourceActions, /SaveVideoNative/);
   assert.match(app, /resource-actions\.js/);
-  assert.match(app, /result\.hidden/);
+  assert.match(app, /MutationObserver/);
+  assert.match(app, /\.hidden/);
 });
 
 test('desktop media title is constrained and wraps safely', () => {
