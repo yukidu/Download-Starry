@@ -2,6 +2,9 @@ import {buildPushPayload} from '@block65/webcrypto-web-push';
 
 const ADMIN_EMAIL = 'yukidu@gmail.com';
 const SESSION_COOKIE = 'downloadstarry_session';
+const APP_ID = 'downloadstarry';
+const PRIMARY_PUSH_TABLE = 'downloadstarry_push_subscriptions';
+const REPAIR_PUSH_TABLE = 'downloadstarry_repair_push_subscriptions';
 let schemaPromise;
 
 function json(data, status = 200) {
@@ -34,7 +37,7 @@ async function ensureSchema(env) {
   if (!env.STARRY_ID_DB) throw new Error('STARRY_ID_DB not bound');
   if (!schemaPromise) {
     schemaPromise = env.STARRY_ID_DB.batch([
-      env.STARRY_ID_DB.prepare(`CREATE TABLE IF NOT EXISTS downloadstarry_push_subscriptions (
+      env.STARRY_ID_DB.prepare(`CREATE TABLE IF NOT EXISTS ${PRIMARY_PUSH_TABLE} (
         endpoint TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         p256dh TEXT NOT NULL,
@@ -43,7 +46,17 @@ async function ensureSchema(env) {
         updatedAt INTEGER NOT NULL,
         revokedAt INTEGER
       )`),
-      env.STARRY_ID_DB.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_push_user_active ON downloadstarry_push_subscriptions(userId, revokedAt)')
+      env.STARRY_ID_DB.prepare(`CREATE INDEX IF NOT EXISTS downloadstarry_push_user_active ON ${PRIMARY_PUSH_TABLE}(userId, revokedAt)`),
+      env.STARRY_ID_DB.prepare(`CREATE TABLE IF NOT EXISTS ${REPAIR_PUSH_TABLE} (
+        endpoint TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        revokedAt INTEGER
+      )`),
+      env.STARRY_ID_DB.prepare(`CREATE INDEX IF NOT EXISTS downloadstarry_repair_push_user_active ON ${REPAIR_PUSH_TABLE}(userId, revokedAt)`)
     ]).catch(error => {
       schemaPromise = undefined;
       throw error;
@@ -63,11 +76,11 @@ async function adminSession(request, env) {
   if (!session || Number(session.expiresAt || 0) <= now) return null;
   const user = await env.STARRY_ID_DB.prepare(`
     SELECT u.id, u.primaryEmail, u.status,
-      EXISTS(SELECT 1 FROM app_memberships am WHERE am.userId = u.id AND am.status = 'active' AND am.isAdminUser = 1) AS isAdmin
+      EXISTS(SELECT 1 FROM app_memberships am WHERE am.userId = u.id AND am.appId = ? AND am.status = 'active' AND am.isAdminUser = 1) AS isAdmin
     FROM users u
     WHERE u.id = ?
     LIMIT 1
-  `).bind(String(session.userId)).first();
+  `).bind(APP_ID, String(session.userId)).first();
   if (!user || String(user.status || 'active') !== 'active') return null;
   const isAdmin = Boolean(user.isAdmin) || String(user.primaryEmail || '').toLowerCase() === ADMIN_EMAIL;
   return isAdmin ? {id: String(user.id), email: String(user.primaryEmail || '')} : null;
@@ -99,10 +112,83 @@ function subscriptionFromRow(row) {
   };
 }
 
+function dedupeSubscriptions(rows = [], limit = 12) {
+  const byEndpoint = new Map();
+  for (const row of rows.sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))) {
+    const endpoint = String(row.endpoint || '');
+    if (!endpoint || byEndpoint.has(endpoint)) continue;
+    byEndpoint.set(endpoint, row);
+    if (byEndpoint.size >= limit) break;
+  }
+  return Array.from(byEndpoint.values());
+}
+
+async function rowsForUser(env, table, userId) {
+  const result = await env.STARRY_ID_DB.prepare(`
+    SELECT endpoint, p256dh, auth, updatedAt
+    FROM ${table}
+    WHERE userId = ? AND revokedAt IS NULL
+    ORDER BY updatedAt DESC
+    LIMIT 12
+  `).bind(String(userId)).all();
+  return result.results || [];
+}
+
+async function rowsForHighestAdmin(env, table) {
+  const preferred = await env.STARRY_ID_DB.prepare(`
+    SELECT s.endpoint, s.p256dh, s.auth, s.updatedAt
+    FROM ${table} s
+    JOIN users u ON u.id = s.userId
+    WHERE s.revokedAt IS NULL
+      AND LOWER(COALESCE(u.primaryEmail, '')) = ?
+      AND COALESCE(u.status, 'active') = 'active'
+    ORDER BY s.updatedAt DESC
+    LIMIT 12
+  `).bind(ADMIN_EMAIL).all();
+  if ((preferred.results || []).length) return preferred.results || [];
+
+  const fallback = await env.STARRY_ID_DB.prepare(`
+    SELECT s.endpoint, s.p256dh, s.auth, s.updatedAt
+    FROM ${table} s
+    JOIN users u ON u.id = s.userId
+    WHERE s.revokedAt IS NULL
+      AND COALESCE(u.status, 'active') = 'active'
+      AND EXISTS(
+        SELECT 1 FROM app_memberships am
+        WHERE am.userId = s.userId AND am.appId = ? AND am.status = 'active' AND am.isAdminUser = 1
+      )
+    ORDER BY s.updatedAt DESC
+    LIMIT 12
+  `).bind(APP_ID).all();
+  return fallback.results || [];
+}
+
+async function loadUserSubscriptions(env, userId) {
+  const [primary, repair] = await Promise.all([
+    rowsForUser(env, PRIMARY_PUSH_TABLE, userId),
+    rowsForUser(env, REPAIR_PUSH_TABLE, userId),
+  ]);
+  return dedupeSubscriptions([...primary, ...repair]);
+}
+
+async function loadHighestAdminSubscriptions(env) {
+  const [primary, repair] = await Promise.all([
+    rowsForHighestAdmin(env, PRIMARY_PUSH_TABLE),
+    rowsForHighestAdmin(env, REPAIR_PUSH_TABLE),
+  ]);
+  return dedupeSubscriptions([...primary, ...repair]);
+}
+
 async function markRevoked(env, endpoint) {
-  await env.STARRY_ID_DB.prepare(
-    'UPDATE downloadstarry_push_subscriptions SET revokedAt = ?, updatedAt = ? WHERE endpoint = ?'
-  ).bind(Date.now(), Date.now(), endpoint).run().catch(() => undefined);
+  const now = Date.now();
+  await env.STARRY_ID_DB.batch([
+    env.STARRY_ID_DB.prepare(
+      `UPDATE ${PRIMARY_PUSH_TABLE} SET revokedAt = ?, updatedAt = ? WHERE endpoint = ?`
+    ).bind(now, now, endpoint),
+    env.STARRY_ID_DB.prepare(
+      `UPDATE ${REPAIR_PUSH_TABLE} SET revokedAt = ?, updatedAt = ? WHERE endpoint = ?`
+    ).bind(now, now, endpoint),
+  ]).catch(() => undefined);
 }
 
 async function deliver(env, row, data) {
@@ -123,25 +209,20 @@ async function deliver(env, row, data) {
   return response.ok;
 }
 
-export async function sendAdminPushNotification(env, data) {
+export async function sendAdminPushNotification(env, data, targetUserId = '') {
   if (!pushConfigured(env) || !env.STARRY_ID_DB) {
     return {status: 'not_configured', sent: 0, total: 0, error: 'Web Push secrets unavailable'};
   }
   await ensureSchema(env);
-  const rows = await env.STARRY_ID_DB.prepare(`
-    SELECT endpoint, p256dh, auth
-    FROM downloadstarry_push_subscriptions
-    WHERE revokedAt IS NULL
-    ORDER BY updatedAt DESC
-    LIMIT 12
-  `).all();
-  const subscriptions = rows.results || [];
+  const subscriptions = targetUserId
+    ? await loadUserSubscriptions(env, targetUserId)
+    : await loadHighestAdminSubscriptions(env);
   let sent = 0;
   await Promise.all(subscriptions.map(async row => {
     try { if (await deliver(env, row, data)) sent += 1; }
     catch (_) {}
   }));
-  if (!subscriptions.length) return {status: 'not_configured', sent: 0, total: 0, error: 'No active Web Push subscription'};
+  if (!subscriptions.length) return {status: 'not_configured', sent: 0, total: 0, error: 'No active admin Web Push subscription'};
   return {
     status: sent ? 'sent' : 'failed',
     sent,
@@ -188,13 +269,11 @@ export async function handlePushRequest(request, env) {
   await ensureSchema(env);
 
   if (url.pathname === '/api/push/config' && request.method === 'GET') {
-    const count = await env.STARRY_ID_DB.prepare(
-      'SELECT COUNT(*) AS count FROM downloadstarry_push_subscriptions WHERE userId = ? AND revokedAt IS NULL'
-    ).bind(admin.id).first();
+    const subscriptions = await loadUserSubscriptions(env, admin.id);
     return json({
       configured: pushConfigured(env),
       publicKey: pushConfigured(env) ? clean(env.VAPID_PUBLIC_KEY, 512) : '',
-      subscriptions: Number(count?.count || 0),
+      subscriptions: subscriptions.length,
     });
   }
 
@@ -209,7 +288,7 @@ export async function handlePushRequest(request, env) {
     }
     const now = Date.now();
     await env.STARRY_ID_DB.prepare(`
-      INSERT INTO downloadstarry_push_subscriptions (endpoint, userId, p256dh, auth, createdAt, updatedAt, revokedAt)
+      INSERT INTO ${PRIMARY_PUSH_TABLE} (endpoint, userId, p256dh, auth, createdAt, updatedAt, revokedAt)
       VALUES (?, ?, ?, ?, ?, ?, NULL)
       ON CONFLICT(endpoint) DO UPDATE SET userId=excluded.userId, p256dh=excluded.p256dh, auth=excluded.auth,
         updatedAt=excluded.updatedAt, revokedAt=NULL
@@ -230,7 +309,7 @@ export async function handlePushRequest(request, env) {
       body: '這支裝置已可以接收繁星下載的系統通知。',
       url: '/account',
       tag: 'downloadstarry-test',
-    });
+    }, admin.id);
     return json({success: result.sent > 0, ...result}, result.sent > 0 ? 200 : 503);
   }
 
