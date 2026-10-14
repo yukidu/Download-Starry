@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const polish = fs.readFileSync(new URL('../static/result-polish.js', import.meta.url), 'utf8');
 const visualTune = fs.readFileSync(new URL('../static/result-visual-tune.js', import.meta.url), 'utf8');
+const urlFieldWrap = fs.readFileSync(new URL('../static/url-field-wrap.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('four primary actions stay on one row as two full-width groups', () => {
@@ -73,10 +74,12 @@ test('parsed URL is returned to the beginning of the visible input', () => {
 
 test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
   assert.match(app, /document\.createElement\('textarea'\)/);
-  assert.match(app, /lineHeight\*3/);
-  assert.match(app, /font:700 16px\/1\.35/);
-  assert.match(app, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
-  assert.match(app, /field\.form\?\.requestSubmit\(\)/);
+  assert.match(app, /u\.replaceWith\(t\)/);
+  assert.match(app, /url-field-wrap\.js\?v=20261015-5/);
+  assert.match(urlFieldWrap, /l\*3/);
+  assert.match(urlFieldWrap, /font:700 16px\/1\.35/);
+  assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
+  assert.match(urlFieldWrap, /f\.form\?\.requestSubmit\(\)/);
 });
 
 test('result UI scripts are cache-busted and loaded in order', () => {
