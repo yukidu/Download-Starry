@@ -12,17 +12,33 @@
   const androidShareIcon = '<svg class="resource-share-icon resource-share-icon-android" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.7 10.7 6.6-4.1M8.7 13.3l6.6 4.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const genericShareIcon = '<svg class="resource-share-icon resource-share-icon-generic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+  const deviceName = () => platform?.runtime?.isIOS ? 'ios' : platform?.runtime?.isAndroid ? 'android' : 'web';
+  const expectedIconClass = () => platform?.runtime?.isIOS ? 'resource-share-icon-ios' : platform?.runtime?.isAndroid ? 'resource-share-icon-android' : 'resource-share-icon-generic';
   const shareIconMarkup = () => {
     if (platform?.runtime?.isIOS) return iosShareIcon;
     if (platform?.runtime?.isAndroid) return androidShareIcon;
     return genericShareIcon;
   };
 
+  const syncShareIcon = button => {
+    if (!button) return;
+    const icon = button.querySelector('.resource-share-icon');
+    if (icon && !icon.classList.contains(expectedIconClass())) icon.outerHTML = shareIconMarkup();
+    button.dataset.shareDevice = deviceName();
+  };
+
+  const watchShareIcon = button => {
+    if (!button || button.dataset.shareIconWatch === '1') return;
+    button.dataset.shareIconWatch = '1';
+    syncShareIcon(button);
+    new MutationObserver(() => syncShareIcon(button)).observe(button, {childList: true, subtree: true});
+  };
+
   const renderShareButton = (button, label) => {
     if (!button) return;
     button.innerHTML = `${shareIconMarkup()}<span class="resource-share-label">${label}</span>`;
     button.setAttribute('aria-label', label);
-    button.dataset.shareDevice = platform?.runtime?.isIOS ? 'ios' : platform?.runtime?.isAndroid ? 'android' : 'web';
+    button.dataset.shareDevice = deviceName();
   };
 
   const installCss = () => {
@@ -253,6 +269,8 @@
 
     renderShareButton(shareVideo, '分享影片');
     renderShareButton(shareAudio, '分享音檔');
+    watchShareIcon(shareVideo);
+    watchShareIcon(shareAudio);
     installCss();
     applied = true;
     return true;
