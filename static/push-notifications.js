@@ -47,6 +47,24 @@
     return readJson(await fetch(endpoint('/api/push/test'), {method: 'POST'}), '測試通知沒有送出');
   }
 
+  async function syncAdminSubscription(settings = null) {
+    if (!supported() || Notification.permission !== 'granted') return {settings, subscription: null, synced: false};
+    if (platform?.runtime?.isIOS && !platform.runtime.isStandalone) return {settings, subscription: null, synced: false};
+    const resolved = settings || await config();
+    if (!resolved?.configured || !resolved.publicKey) return {settings: resolved, subscription: null, synced: false};
+    await platform?.pwa?.registerServiceWorker?.();
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToBytes(resolved.publicKey),
+      });
+    }
+    await saveSubscription(subscription);
+    return {settings: resolved, subscription, synced: true};
+  }
+
   function ensureStyle() {
     if (document.querySelector('#downloadstarry-push-style')) return;
     const style = document.createElement('style');
@@ -58,10 +76,25 @@
   }
 
   async function mount() {
-    if (location.pathname !== '/account' || !memberApi) return;
+    if (!['/account', '/report'].includes(location.pathname) || !memberApi) return;
     const data = await memberApi.session().catch(() => null);
     const user = data?.authenticated ? data.user : null;
     if (!user?.isAdmin) return;
+
+    let settings = null;
+    let subscription = null;
+    let syncError = '';
+    if (supported() && Notification.permission === 'granted') {
+      try {
+        const synced = await syncAdminSubscription();
+        settings = synced.settings;
+        subscription = synced.subscription;
+      } catch (error) {
+        syncError = error.message || '管理員通知訂閱同步失敗。';
+      }
+    }
+
+    if (location.pathname !== '/account') return;
     const body = document.querySelector('#dsr-body');
     if (!body || body.querySelector('#downloadstarry-push-card')) return;
 
@@ -79,8 +112,6 @@
     const toggle = section.querySelector('#dsp-toggle');
     const test = section.querySelector('#dsp-test');
     const message = section.querySelector('#dsp-message');
-    let subscription = null;
-    let settings = null;
 
     const setBusy = value => { toggle.disabled = value; test.disabled = value; };
     const render = () => {
@@ -108,7 +139,7 @@
     }
 
     try {
-      settings = await config();
+      settings = settings || await config();
       if (!settings.configured) {
         badge.textContent = '待設定';
         toggle.disabled = true;
@@ -118,9 +149,14 @@
       }
       await platform?.pwa?.registerServiceWorker?.();
       const registration = await navigator.serviceWorker.ready;
-      subscription = await registration.pushManager.getSubscription();
+      subscription = subscription || await registration.pushManager.getSubscription();
+      if (subscription && Notification.permission === 'granted') {
+        await saveSubscription(subscription);
+        syncError = '';
+      }
       render();
-      if (subscription) message.textContent = '這支裝置已訂閱繁星下載系統通知。';
+      if (subscription) message.textContent = syncError || '這支裝置已訂閱繁星下載系統通知，伺服器訂閱也已同步。';
+      else if (syncError) message.textContent = syncError;
     } catch (error) {
       badge.textContent = '錯誤';
       toggle.disabled = true;
@@ -163,11 +199,15 @@
     test.addEventListener('click', async () => {
       setBusy(true);
       message.textContent = '正在發送測試通知…';
-      try { await sendTest(); message.textContent = '測試通知已送出。'; }
+      try {
+        if (subscription) await saveSubscription(subscription);
+        await sendTest();
+        message.textContent = '測試通知已送出。';
+      }
       catch (error) { message.textContent = error.message || '測試通知失敗。'; }
       finally { setBusy(false); }
     });
   }
 
-  window.DownloadStarryPushUI = Object.freeze({mount});
+  window.DownloadStarryPushUI = Object.freeze({mount, syncAdminSubscription});
 })();
