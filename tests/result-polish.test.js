@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const polish = fs.readFileSync(new URL('../static/result-polish.js', import.meta.url), 'utf8');
 const visualTune = fs.readFileSync(new URL('../static/result-visual-tune.js', import.meta.url), 'utf8');
 const urlFieldWrap = fs.readFileSync(new URL('../static/url-field-wrap.js', import.meta.url), 'utf8');
+const resultLoader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('four primary actions stay on one row as two full-width groups', () => {
@@ -83,7 +84,8 @@ test('URL field becomes a smaller auto-growing three-line textarea before handle
 });
 
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /resource-actions\.js\?v=20261015-5/);
-  assert.match(app, /result-polish\.js\?v=20261015-5/);
-  assert.match(app, /result-visual-tune\.js\?v=20261015-5/);
+  assert.match(app, /result-loader\.js\?v=20261015-5/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-5/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-5/);
+  assert.match(resultLoader, /result-visual-tune\.js\?v=20261015-5/);
 });
