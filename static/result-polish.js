@@ -4,29 +4,47 @@
 
   const result = document.getElementById('result');
   const urlInput = document.getElementById('url');
-  const grid = document.querySelector('#video-download-actions .download-action-grid');
-  const videoButton = document.getElementById('download-video-button');
-  const shareVideo = document.getElementById('share-video-button');
-  const audioButton = document.getElementById('download-audio-button');
-  const shareAudio = document.getElementById('share-audio-button');
-  const reportButton = document.getElementById('report-download-button');
+  const platform = window.SaveVideoPlatform;
+  let applied = false;
+  let attempts = 0;
 
-  if (!result || !grid || !videoButton || !audioButton || !shareVideo || !shareAudio) return;
+  const iosShareIcon = '<svg class="resource-share-icon resource-share-icon-ios" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const androidShareIcon = '<svg class="resource-share-icon resource-share-icon-android" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.7 10.7 6.6-4.1M8.7 13.3l6.6 4.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const genericShareIcon = '<svg class="resource-share-icon resource-share-icon-generic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-  // A 方案：四個主要操作維持 2×2，全部同尺寸，不再用外框分組。
-  grid.replaceChildren(videoButton, shareVideo, audioButton, shareAudio);
-  if (reportButton) grid.append(reportButton);
+  const shareIconMarkup = () => {
+    if (platform?.runtime?.isIOS) return iosShareIcon;
+    if (platform?.runtime?.isAndroid) return androidShareIcon;
+    return genericShareIcon;
+  };
 
-  const css = document.createElement('style');
-  css.id = 'downloadstarry-result-polish-style';
-  css.textContent = `
+  const renderShareButton = (button, label) => {
+    if (!button) return;
+    button.innerHTML = `${shareIconMarkup()}<span class="resource-share-label">${label}</span>`;
+    button.setAttribute('aria-label', label);
+    button.dataset.shareDevice = platform?.runtime?.isIOS ? 'ios' : platform?.runtime?.isAndroid ? 'android' : 'web';
+  };
+
+  const installCss = () => {
+    if (document.getElementById('downloadstarry-result-polish-style')) return;
+    const css = document.createElement('style');
+    css.id = 'downloadstarry-result-polish-style';
+    css.textContent = `
 #video-download-actions .download-action-grid{
   display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-columns:minmax(0,1fr)!important;
   gap:8px!important;
   align-items:stretch!important;
 }
-#video-download-actions .download-action-grid>.download-action-button{
+#video-download-actions .download-primary-2x2{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,minmax(58px,auto))!important;
+  gap:8px!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#video-download-actions .download-primary-2x2>.download-action-button{
   width:100%!important;
   min-width:0!important;
   min-height:58px!important;
@@ -40,7 +58,7 @@
   white-space:nowrap!important;
   box-shadow:none!important;
 }
-#video-download-actions .download-action-grid>.download-action-button:hover{
+#video-download-actions .download-primary-2x2>.download-action-button:hover{
   background:var(--button-bg)!important;
   color:var(--button-text)!important;
   filter:brightness(1.08);
@@ -50,16 +68,20 @@
   flex-direction:row!important;
   align-items:center!important;
   justify-content:center!important;
-  gap:7px!important;
+  gap:8px!important;
 }
 #video-download-actions .resource-share-icon{
-  width:22px!important;
-  height:22px!important;
-  flex:0 0 22px!important;
+  width:30px!important;
+  height:30px!important;
+  flex:0 0 30px!important;
   stroke:currentColor!important;
 }
+#video-download-actions .resource-share-label{
+  display:inline-block!important;
+  color:inherit!important;
+}
 #video-download-actions .report-download-button{
-  grid-column:1/-1!important;
+  width:100%!important;
   min-height:58px!important;
   margin-top:2px!important;
   border-radius:14px!important;
@@ -91,33 +113,39 @@
 .media-card>.thumb-wrap{
   grid-area:thumb!important;
   width:190px!important;
-  height:107px!important;
+  height:auto!important;
+  aspect-ratio:16/9!important;
   margin:0!important;
   min-width:0!important;
   align-self:start!important;
 }
+.media-card>.thumb-wrap img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+}
 .media-card>.media-meta{
   grid-area:meta!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  align-items:flex-start!important;
   width:100%!important;
+  height:auto!important;
+  min-height:0!important;
   min-width:0!important;
   margin:0!important;
   padding:0!important;
   align-self:start!important;
   overflow:hidden!important;
 }
-.media-card>.media-meta>span{
-  display:block!important;
-  max-width:100%!important;
-  margin:0!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-}
 .media-card>.media-meta h2{
+  order:1!important;
   display:-webkit-box!important;
   width:100%!important;
   max-width:100%!important;
-  margin:4px 0 0!important;
+  margin:0!important;
+  color:var(--ink)!important;
   font-size:17px!important;
   line-height:1.38!important;
   white-space:normal!important;
@@ -127,19 +155,29 @@
   -webkit-line-clamp:4!important;
   -webkit-box-orient:vertical!important;
 }
+.media-card>.media-meta>span{
+  order:2!important;
+  display:block!important;
+  max-width:100%!important;
+  margin:7px 0 0!important;
+  color:var(--muted)!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
 .download-actions{margin-top:8px!important;gap:8px!important}
 @media(max-width:650px){
-  #video-download-actions .download-action-grid{gap:7px!important}
-  #video-download-actions .download-action-grid>.download-action-button{
-    min-height:56px!important;
-    padding:9px 5px!important;
+  #video-download-actions .download-primary-2x2{gap:7px!important}
+  #video-download-actions .download-primary-2x2>.download-action-button{
+    min-height:58px!important;
+    padding:8px 5px!important;
     border-radius:13px!important;
     font-size:14px!important;
   }
   #video-download-actions .resource-share-icon{
-    width:20px!important;
-    height:20px!important;
-    flex-basis:20px!important;
+    width:32px!important;
+    height:32px!important;
+    flex-basis:32px!important;
   }
   .result{padding:10px 6px 3px!important}
   .result:not([hidden]) .media-card{
@@ -158,25 +196,29 @@
     margin:0!important;
   }
   .media-card>.media-meta h2{
-    margin-top:3px!important;
+    margin:0!important;
     font-size:15px!important;
     line-height:1.35!important;
-    -webkit-line-clamp:4!important;
+    -webkit-line-clamp:5!important;
+  }
+  .media-card>.media-meta>span{
+    margin-top:6px!important;
+    font-size:12px!important;
   }
 }
 @media(max-width:380px){
-  #video-download-actions .download-action-grid{gap:6px!important}
-  #video-download-actions .download-action-grid>.download-action-button{
-    min-height:54px!important;
+  #video-download-actions .download-primary-2x2{gap:6px!important}
+  #video-download-actions .download-primary-2x2>.download-action-button{
+    min-height:56px!important;
     padding-left:3px!important;
     padding-right:3px!important;
     font-size:13px!important;
   }
-  #video-download-actions .resource-share-button{gap:5px!important}
+  #video-download-actions .resource-share-button{gap:6px!important}
   #video-download-actions .resource-share-icon{
-    width:18px!important;
-    height:18px!important;
-    flex-basis:18px!important;
+    width:30px!important;
+    height:30px!important;
+    flex-basis:30px!important;
   }
   .result:not([hidden]) .media-card{
     grid-template-columns:minmax(108px,40%) minmax(0,1fr)!important;
@@ -186,7 +228,41 @@
   .media-card>.media-meta h2{font-size:14px!important}
 }
 `;
-  document.head.appendChild(css);
+    document.head.appendChild(css);
+  };
+
+  const applyLayout = () => {
+    if (applied) return true;
+    const grid = document.querySelector('#video-download-actions .download-action-grid');
+    const videoButton = document.getElementById('download-video-button');
+    const shareVideo = document.getElementById('share-video-button');
+    const audioButton = document.getElementById('download-audio-button');
+    const shareAudio = document.getElementById('share-audio-button');
+    const reportButton = document.getElementById('report-download-button');
+    if (!result || !grid || !videoButton || !audioButton || !shareVideo || !shareAudio) return false;
+
+    let primaryGrid = document.getElementById('download-primary-2x2');
+    if (!primaryGrid) {
+      primaryGrid = document.createElement('div');
+      primaryGrid.id = 'download-primary-2x2';
+      primaryGrid.className = 'download-primary-2x2';
+    }
+    primaryGrid.replaceChildren(videoButton, shareVideo, audioButton, shareAudio);
+    grid.replaceChildren(primaryGrid);
+    if (reportButton) grid.append(reportButton);
+
+    renderShareButton(shareVideo, '分享影片');
+    renderShareButton(shareAudio, '分享音檔');
+    installCss();
+    applied = true;
+    return true;
+  };
+
+  const ensureLayout = () => {
+    if (applyLayout()) return;
+    attempts += 1;
+    if (attempts < 40) requestAnimationFrame(ensureLayout);
+  };
 
   const showUrlFromStart = () => {
     if (!urlInput?.value) return;
@@ -198,11 +274,16 @@
     requestAnimationFrame(() => requestAnimationFrame(resetScroll));
   };
 
-  if (!result.hidden) showUrlFromStart();
+  ensureLayout();
+  if (!result?.hidden) showUrlFromStart();
   const observer = new MutationObserver(() => {
-    if (!result.hidden) showUrlFromStart();
+    if (!result?.hidden) {
+      applied = false;
+      ensureLayout();
+      showUrlFromStart();
+    }
   });
-  observer.observe(result, {attributes: true, attributeFilter: ['hidden']});
+  if (result) observer.observe(result, {attributes: true, attributeFilter: ['hidden']});
 
-  window.DownloadStarryResultPolish = Object.freeze({showUrlFromStart});
+  window.DownloadStarryResultPolish = Object.freeze({showUrlFromStart, applyLayout});
 })();
