@@ -30,6 +30,11 @@ function clean(value, max) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+function httpUrl(value, max = 4096) {
+  const url = clean(value, max);
+  return /^https?:\/\//i.test(url) ? url : '';
+}
+
 async function ensureSchema(env) {
   if (!env.STARRY_ID_DB) throw new Error('STARRY_ID_DB not bound');
   const db = env.STARRY_ID_DB;
@@ -45,7 +50,26 @@ async function ensureSchema(env) {
         subtitle TEXT NOT NULL DEFAULT '',
         createdAt INTEGER NOT NULL
       )`),
-      db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_history_user_created ON downloadstarry_history(userId, createdAt DESC)')
+      db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_history_user_created ON downloadstarry_history(userId, createdAt DESC)'),
+      db.prepare(`CREATE TABLE IF NOT EXISTS downloadstarry_url_metadata (
+        userId TEXT NOT NULL,
+        url TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        thumbnail TEXT NOT NULL DEFAULT '',
+        updatedAt INTEGER NOT NULL,
+        PRIMARY KEY (userId, url)
+      )`),
+      db.prepare('CREATE INDEX IF NOT EXISTS downloadstarry_url_metadata_user_updated ON downloadstarry_url_metadata(userId, updatedAt DESC)'),
+      db.prepare(`CREATE TABLE IF NOT EXISTS downloadstarry_report_repair_watch (
+        reportId TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        notifiedAt INTEGER,
+        notifyStatus TEXT NOT NULL DEFAULT 'pending',
+        notifyError TEXT NOT NULL DEFAULT ''
+      )`)
     ]).catch(error => {
       schemaReady.delete(db);
       throw error;
@@ -72,12 +96,28 @@ async function sessionUserId(request, env) {
   return clean(row?.userId, 160);
 }
 
+async function upsertMetadata(env, userId, url, title, thumbnail) {
+  const safeUrl = httpUrl(url);
+  const safeTitle = clean(title, 500);
+  const safeThumbnail = httpUrl(thumbnail, 4096);
+  if (!userId || !safeUrl || (!safeTitle && !safeThumbnail)) return false;
+  await env.STARRY_ID_DB.prepare(`
+    INSERT INTO downloadstarry_url_metadata (userId,url,title,thumbnail,updatedAt)
+    VALUES (?,?,?,?,?)
+    ON CONFLICT(userId,url) DO UPDATE SET
+      title=CASE WHEN excluded.title <> '' THEN excluded.title ELSE downloadstarry_url_metadata.title END,
+      thumbnail=CASE WHEN excluded.thumbnail <> '' THEN excluded.thumbnail ELSE downloadstarry_url_metadata.thumbnail END,
+      updatedAt=excluded.updatedAt
+  `).bind(userId, safeUrl, safeTitle, safeThumbnail, Date.now()).run();
+  return true;
+}
+
 export async function recordDownloadStart(request, env, result = {}) {
   try {
     const userId = await sessionUserId(request, env);
     if (!userId) return {recorded: false, reason: 'guest'};
     const form = await request.formData();
-    const url = clean(form.get('url'), 2048);
+    const url = httpUrl(form.get('url'));
     const type = clean(form.get('type'), 40);
     if (!url || !type) return {recorded: false, reason: 'missing_data'};
     await env.STARRY_ID_DB.prepare(`
@@ -93,6 +133,7 @@ export async function recordDownloadStart(request, env, result = {}) {
       clean(form.get('subtitle'), 120),
       Date.now()
     ).run();
+    await upsertMetadata(env, userId, url, form.get('title'), form.get('thumbnail')).catch(() => undefined);
     return {recorded: true};
   } catch (error) {
     console.warn('Download Starry history write skipped', {
@@ -102,23 +143,50 @@ export async function recordDownloadStart(request, env, result = {}) {
   }
 }
 
+async function saveMetadataRequest(request, env) {
+  const userId = await sessionUserId(request, env);
+  if (!userId) return json({error: '請先登入 Starry ID'}, 401);
+  const body = await request.json().catch(() => ({}));
+  const url = httpUrl(body.url);
+  if (!url) return json({error: '網址格式不正確'}, 400);
+  const saved = await upsertMetadata(env, userId, url, body.title, body.thumbnail);
+  return json({success: true, saved});
+}
+
 export async function handleDownloadHistoryRequest(request, env) {
   const url = new URL(request.url);
-  if (url.pathname !== '/api/download-history') return null;
-  if (request.method.toUpperCase() !== 'GET') return json({error: 'Method not allowed'}, 405);
+  if (!url.pathname.startsWith('/api/download-history')) return null;
   if (!env.STARRY_ID_DB) return json({error: '下載紀錄服務尚未連線'}, 503);
+  await ensureSchema(env);
+
+  if (url.pathname === '/api/download-history/metadata') {
+    if (request.method.toUpperCase() !== 'POST') return json({error: 'Method not allowed'}, 405);
+    return saveMetadataRequest(request, env);
+  }
+
+  if (url.pathname !== '/api/download-history') return json({error: '找不到下載紀錄服務'}, 404);
+  if (request.method.toUpperCase() !== 'GET') return json({error: 'Method not allowed'}, 405);
   const userId = await sessionUserId(request, env);
   if (!userId) return json({error: '請先登入 Starry ID'}, 401);
   const rows = await env.STARRY_ID_DB.prepare(`
-    SELECT id,jobId,url,type,quality,subtitle,createdAt,recordKind,status
+    SELECT id,jobId,url,type,quality,subtitle,title,thumbnail,createdAt,recordKind,status,watching,notifyStatus
     FROM (
-      SELECT id,jobId,url,type,quality,subtitle,createdAt,'download' AS recordKind,'' AS status
-      FROM downloadstarry_history
-      WHERE userId = ?
+      SELECT h.id,h.jobId,h.url,h.type,h.quality,h.subtitle,
+        COALESCE(m.title,'') AS title,COALESCE(m.thumbnail,'') AS thumbnail,
+        h.createdAt,'download' AS recordKind,'' AS status,0 AS watching,'' AS notifyStatus
+      FROM downloadstarry_history h
+      LEFT JOIN downloadstarry_url_metadata m ON m.userId = h.userId AND m.url = h.url
+      WHERE h.userId = ?
       UNION ALL
-      SELECT id,'' AS jobId,url,'report' AS type,'' AS quality,'' AS subtitle,createdAt,'report' AS recordKind,status
-      FROM downloadstarry_reports
-      WHERE userId = ? AND url <> ''
+      SELECT r.id,'' AS jobId,r.url,'report' AS type,'' AS quality,'' AS subtitle,
+        COALESCE(m.title,'') AS title,COALESCE(m.thumbnail,'') AS thumbnail,
+        r.createdAt,'report' AS recordKind,r.status,
+        CASE WHEN w.enabled = 1 THEN 1 ELSE 0 END AS watching,
+        COALESCE(w.notifyStatus,'') AS notifyStatus
+      FROM downloadstarry_reports r
+      LEFT JOIN downloadstarry_url_metadata m ON m.userId = r.userId AND m.url = r.url
+      LEFT JOIN downloadstarry_report_repair_watch w ON w.reportId = r.id AND w.userId = r.userId
+      WHERE r.userId = ? AND r.url <> ''
     )
     ORDER BY createdAt DESC
     LIMIT 100
