@@ -14,5 +14,25 @@
       window.location.assign(`/api/auth/starry/login${chooseAccount ? '?choose=1' : ''}`);
     },
   });
-  window.DownloadStarryMemberPlatform = Object.freeze({session, auth});
+  const share = Object.freeze({
+    async open({title = '', text = '', url = ''} = {}) {
+      const payload = {title: String(title || ''), text: String(text || ''), url: String(url || '')};
+      const adapter = native()?.share;
+      if (adapter?.share) {
+        await adapter.share(payload);
+        return {mode: 'shared'};
+      }
+      if (navigator.share) {
+        await navigator.share(payload);
+        return {mode: 'shared'};
+      }
+      const fallback = payload.url || payload.text;
+      if (fallback && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fallback);
+        return {mode: 'copied'};
+      }
+      throw new Error('目前裝置不支援分享功能');
+    },
+  });
+  window.DownloadStarryMemberPlatform = Object.freeze({session, auth, share});
 })();

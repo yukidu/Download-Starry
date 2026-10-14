@@ -33,7 +33,7 @@ async function fetchHandler(request, env, ctx) {
 
   const url = new URL(request.url);
 
-  if (url.pathname === '/api/download-history') {
+  if (url.pathname.startsWith('/api/download-history')) {
     try {
       return await handleDownloadHistoryRequest(request, env);
     } catch {
