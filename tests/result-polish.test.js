@@ -87,10 +87,10 @@ test('URL field becomes a smaller auto-growing three-line textarea before handle
 });
 
 test('result UI stays hidden until one final visual layer is ready', () => {
-  assert.match(app, /r\.style\.visibility='hidden'/);
+  assert.match(app, /r\.style\.opacity=0/);
   assert.match(app, /result-loader\.js\?7/);
-  assert.match(app, /window\.DownloadStarryResultReady/);
-  assert.match(app, /r\.style\.visibility=''/);
+  assert.match(app, /DownloadStarryResultReady/);
+  assert.match(app, /r\.style\.opacity=1/);
   assert.match(resultLoader, /result-ui\.css\?v=20261015-7/);
   assert.match(resultLoader, /resource-actions\.js\?v=20261015-7/);
   assert.match(resultLoader, /result-polish\.js\?v=20261015-7/);
