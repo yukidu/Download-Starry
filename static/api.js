@@ -28,12 +28,17 @@
       });
       return readJson(response, '無法解析網址');
     },
-    async startDownload({url, type, quality = 'best', subtitle = ''}) {
+    async startDownload({url, type, quality = 'best', subtitle = '', title = '', thumbnail = ''}) {
+      const pageTitle = String(title || document.querySelector('#title')?.textContent || '').trim();
+      const thumb = document.querySelector('#thumbnail');
+      const pageThumbnail = String(thumbnail || (!thumb?.hidden ? thumb?.src : '') || '').trim();
       const formData = new FormData();
       formData.append('url', url);
       formData.append('type', type);
       formData.append('quality', quality || 'best');
       formData.append('subtitle', subtitle || '');
+      formData.append('title', pageTitle);
+      formData.append('thumbnail', pageThumbnail);
       const response = await fetch(endpoint('/api/download'), {method: 'POST', body: formData});
       return readJson(response, '無法開始下載');
     },
