@@ -33,6 +33,14 @@ test('video and audio sections are visually separated with larger centered contr
   assert.match(visualTune, /justify-content:center!important/);
 });
 
+test('action row widens until the last audio button aligns with the clear button', () => {
+  assert.match(visualTune, /clear-url-button/);
+  assert.match(visualTune, /share-audio-button/);
+  assert.match(visualTune, /getBoundingClientRect\(\)/);
+  assert.match(visualTune, /targetRight = Math\.min\(clearRect\.right, viewportRight\)/);
+  assert.match(visualTune, /actions\.style\.width = `\$\{Math\.floor\(desired\)\}px`/);
+});
+
 test('report button uses a pale non-black treatment', () => {
   assert.match(visualTune, /report-download-button[\s\S]*background:linear-gradient/);
   assert.match(visualTune, /color:#53637c!important/);
@@ -63,8 +71,16 @@ test('parsed URL is returned to the beginning of the visible input', () => {
   assert.match(polish, /observer\.observe\(result, \{attributes: true, attributeFilter: \['hidden'\]\}\)/);
 });
 
+test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
+  assert.match(app, /document\.createElement\('textarea'\)/);
+  assert.match(app, /lineHeight\*3/);
+  assert.match(app, /font:700 16px\/1\.35/);
+  assert.match(app, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
+  assert.match(app, /field\.form\?\.requestSubmit\(\)/);
+});
+
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /resource-actions\.js\?v=20261015-4/);
-  assert.match(app, /result-polish\.js\?v=20261015-4/);
-  assert.match(app, /result-visual-tune\.js\?v=20261015-4/);
+  assert.match(app, /resource-actions\.js\?v=20261015-5/);
+  assert.match(app, /result-polish\.js\?v=20261015-5/);
+  assert.match(app, /result-visual-tune\.js\?v=20261015-5/);
 });

@@ -7,11 +7,23 @@
     const style = document.createElement('style');
     style.id = 'downloadstarry-result-visual-tune-style';
     style.textContent = `
+#video-download-actions{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  box-sizing:border-box!important;
+}
 #video-download-actions .download-action-grid{
+  width:100%!important;
+  max-width:none!important;
   column-gap:10px!important;
   row-gap:12px!important;
 }
 #video-download-actions .resource-action-group{
+  width:100%!important;
+  min-width:0!important;
   padding:10px!important;
   border-radius:20px!important;
   box-shadow:0 10px 26px rgba(28,35,76,.08)!important;
@@ -37,6 +49,8 @@
   color:#2a79bf!important;
 }
 #video-download-actions .resource-action-group-buttons{
+  width:100%!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:8px!important;
   justify-content:center!important;
 }
@@ -125,6 +139,35 @@
     document.head.appendChild(style);
   };
 
+  const syncActionWidth = () => {
+    const actions = document.getElementById('video-download-actions');
+    const clearButton = document.getElementById('clear-url-button');
+    const lastButton = document.getElementById('share-audio-button');
+    if (!actions || !clearButton || !lastButton) return;
+
+    actions.style.width = '100%';
+    const actionRect = actions.getBoundingClientRect();
+    const clearRect = clearButton.getBoundingClientRect();
+    const lastRect = lastButton.getBoundingClientRect();
+    const viewportRight = document.documentElement.clientWidth - 10;
+    const targetRight = Math.min(clearRect.right, viewportRight);
+    const delta = targetRight - lastRect.right;
+    if (Math.abs(delta) < 1) return;
+
+    const desired = Math.max(240, Math.min(actionRect.width + delta, viewportRight - actionRect.left));
+    actions.style.width = `${Math.floor(desired)}px`;
+  };
+
+  const scheduleSync = () => requestAnimationFrame(() => requestAnimationFrame(syncActionWidth));
+
   install();
-  window.DownloadStarryResultVisualTune = Object.freeze({install});
+  scheduleSync();
+  window.addEventListener('resize', scheduleSync, {passive:true});
+  window.addEventListener('orientationchange', scheduleSync, {passive:true});
+  if (window.ResizeObserver) {
+    const urlRow = document.querySelector('.url-row');
+    if (urlRow) new ResizeObserver(scheduleSync).observe(urlRow);
+  }
+
+  window.DownloadStarryResultVisualTune = Object.freeze({install, syncActionWidth});
 })();
