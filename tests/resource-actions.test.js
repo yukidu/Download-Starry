@@ -5,6 +5,7 @@ import test from 'node:test';
 const resourceActions = fs.readFileSync(new URL('../static/resource-actions.js', import.meta.url), 'utf8');
 const memberPlatform = fs.readFileSync(new URL('../static/member-platform.js', import.meta.url), 'utf8');
 const corePlatform = fs.readFileSync(new URL('../static/platform.js', import.meta.url), 'utf8');
+const resultLoader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('resource actions group video and audio pairs while keeping four primary actions on one row', () => {
@@ -55,10 +56,13 @@ test('resource share downloads the actual file before opening the device share s
 });
 
 test('resource share remains lazy-loaded until parsed result is shown', () => {
-  assert.match(app, /resource-actions\.js/);
+  assert.match(app, /result-loader\.js/);
   assert.match(app, /MutationObserver/);
   assert.match(app, /\.hidden/);
+  assert.match(resultLoader, /resource-actions\.js/);
+  assert.doesNotMatch(app, /member-platform\.js/);
   assert.match(resourceActions, /loadSharePlatform/);
+  assert.match(resourceActions, /\/static\/member-platform\.js/);
 });
 
 test('desktop media title is constrained and wraps safely', () => {
