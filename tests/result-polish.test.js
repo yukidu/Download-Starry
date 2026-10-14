@@ -32,15 +32,18 @@ test('video and audio sections are visually separated with larger centered contr
   assert.match(visualTune, /resource-action-group-audio[\s\S]*linear-gradient/);
   assert.match(visualTune, /resource-action-group-label[\s\S]*font:900 25px/);
   assert.match(visualTune, /download-action-button[\s\S]*min-height:72px!important[\s\S]*width:100%!important/);
-  assert.match(visualTune, /justify-content:center!important/);
+  assert.match(visualTune, /justify-content:stretch!important/);
 });
 
-test('action row widens until the last audio button aligns with the clear button', () => {
+test('action row fully stretches both groups and aligns the last audio button with clear', () => {
+  assert.match(visualTune, /download-action-grid[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)!important/);
+  assert.match(visualTune, /resource-action-group[\s\S]*max-width:none!important[\s\S]*justify-self:stretch!important/);
   assert.match(visualTune, /clear-url-button/);
   assert.match(visualTune, /share-audio-button/);
   assert.match(visualTune, /getBoundingClientRect\(\)/);
-  assert.match(visualTune, /targetRight = Math\.min\(clearRect\.right, viewportRight\)/);
-  assert.match(visualTune, /actions\.style\.width = `\$\{Math\.floor\(desired\)\}px`/);
+  assert.match(visualTune, /rightInset = Math\.max\(0, audioRect\.right - lastRect\.right\)/);
+  assert.match(visualTune, /targetRight - actionRect\.left \+ rightInset/);
+  assert.match(visualTune, /grid\.style\.width = '100%'/);
 });
 
 test('report button uses a pale non-black treatment', () => {
@@ -84,8 +87,8 @@ test('URL field becomes a smaller auto-growing three-line textarea before handle
 });
 
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /result-loader\.js\?5/);
-  assert.match(resultLoader, /resource-actions\.js\?v=20261015-5/);
-  assert.match(resultLoader, /result-polish\.js\?v=20261015-5/);
-  assert.match(resultLoader, /result-visual-tune\.js\?v=20261015-5/);
+  assert.match(app, /result-loader\.js\?6/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-6/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-6/);
+  assert.match(resultLoader, /result-visual-tune\.js\?v=20261015-6/);
 });
