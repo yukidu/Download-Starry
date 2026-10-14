@@ -24,7 +24,7 @@
   const progressEta = document.getElementById('progress-eta');
   const stopButton = document.getElementById('stop-download');
 
-  if (!api || !platform?.sharing || !result || !grid || !videoButton || !audioButton) return;
+  if (!api || !platform || !result || !grid || !videoButton || !audioButton) return;
 
   const shareIcon = '<svg class="resource-share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -97,6 +97,39 @@
     if (!message) return;
     message.textContent = '';
     message.classList.remove('show');
+  };
+
+  let sharePlatformPromise = null;
+  const loadSharePlatform = () => {
+    if (window.DownloadStarryMemberPlatform?.share?.file) return Promise.resolve(window.DownloadStarryMemberPlatform.share);
+    if (!sharePlatformPromise) {
+      sharePlatformPromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-downloadstarry-share-platform]');
+        const script = existing || document.createElement('script');
+        const finish = () => {
+          const share = window.DownloadStarryMemberPlatform?.share;
+          if (share?.file) resolve(share);
+          else reject(new Error('分享功能載入未完成，請再試一次。'));
+        };
+        if (existing) {
+          if (window.DownloadStarryMemberPlatform) finish();
+          else {
+            existing.addEventListener('load', finish, {once: true});
+            existing.addEventListener('error', () => reject(new Error('分享功能載入失敗，請重新整理後再試。')), {once: true});
+          }
+          return;
+        }
+        script.src = '/static/member-platform.js';
+        script.dataset.downloadstarrySharePlatform = '1';
+        script.addEventListener('load', finish, {once: true});
+        script.addEventListener('error', () => reject(new Error('分享功能載入失敗，請重新整理後再試。')), {once: true});
+        document.head.appendChild(script);
+      }).catch(error => {
+        sharePlatformPromise = null;
+        throw error;
+      });
+    }
+    return sharePlatformPromise;
   };
 
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -203,8 +236,10 @@
   const requiresFreshTap = error => error?.name === 'NotAllowedError' || /user gesture|activation|not allowed|permission/i.test(String(error?.message || ''));
 
   const sharePreparedFile = async prepared => {
+    const share = window.DownloadStarryMemberPlatform?.share;
+    if (!share?.file) throw new Error('分享功能載入未完成，請再試一次。');
     try {
-      await platform.sharing.shareFile(prepared.file, currentSharePayload(prepared.type));
+      await share.file(prepared.file, currentSharePayload(prepared.type));
       pendingShare = null;
       renderShareButton(shareButtonFor(prepared.type), defaultShareLabel(prepared.type));
       if (progressStatus) progressStatus.textContent = '已開啟手機分享清單';
@@ -254,6 +289,7 @@
     if (progressStatus) progressStatus.textContent = `正在下載${type === 'audio' ? '音檔' : '影片'}，完成後開啟分享`;
 
     try {
+      await loadSharePlatform();
       const downloaded = await downloadShareFile(type);
       if (!downloaded) return;
       const prepared = {...downloaded, type, key};
