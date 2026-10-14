@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
 if(window.DownloadStarryHistoryUI)return;
-const platform=()=>window.DownloadStarryMemberPlatform,api=()=>window.DownloadStarryMemberAPI,device=()=>window.SaveVideoPlatform,baseApi=()=>window.SaveVideoAPI;
+const platform=()=>window.DownloadStarryMemberPlatform,api=()=>window.DownloadStarryMemberAPI,baseApi=()=>window.SaveVideoAPI;
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const typeLabel=value=>({video:'影片',audio:'音檔',subtitle:'CC 字幕',photo:'照片',image:'照片',report:'回報無法下載'}[String(value||'').toLowerCase()]||String(value||'下載'));
 const statusLabel=value=>({new:'待處理',in_progress:'處理中',resolved:'已修復'}[String(value||'').toLowerCase()]||'');
@@ -39,7 +39,7 @@ function bindActions(content,rows){
     const original=button.textContent;button.disabled=true;
     try{
       const title=String(row.title||'').trim()||`${typeLabel(row.type)}｜繁星下載`;
-      const result=await device()?.share?.share?.({title,text:title,url:row.url});
+      const result=await platform()?.share?.open?.({title,text:title,url:row.url});
       button.textContent=result?.mode==='copied'?'已複製連結':'已分享';
       setTimeout(()=>{button.textContent=original;button.disabled=false},1400);
     }catch(error){
