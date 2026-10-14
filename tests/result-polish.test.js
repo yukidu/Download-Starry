@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const polish = fs.readFileSync(new URL('../static/result-polish.js', import.meta.url), 'utf8');
+const visualTune = fs.readFileSync(new URL('../static/result-visual-tune.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('four primary actions stay on one row as two full-width groups', () => {
@@ -22,6 +23,20 @@ test('mobile action groups keep all four buttons inside screen width', () => {
   assert.match(polish, /resource-action-group \.download-action-button[\s\S]*font-size:13px!important/);
   assert.match(polish, /resource-share-button[\s\S]*flex-direction:column!important/);
   assert.match(polish, /width:31px!important/);
+});
+
+test('video and audio sections are visually separated with larger centered controls', () => {
+  assert.match(visualTune, /resource-action-group-video[\s\S]*linear-gradient/);
+  assert.match(visualTune, /resource-action-group-audio[\s\S]*linear-gradient/);
+  assert.match(visualTune, /resource-action-group-label[\s\S]*font:900 25px/);
+  assert.match(visualTune, /download-action-button[\s\S]*min-height:72px!important[\s\S]*width:100%!important/);
+  assert.match(visualTune, /justify-content:center!important/);
+});
+
+test('report button uses a pale non-black treatment', () => {
+  assert.match(visualTune, /report-download-button[\s\S]*background:linear-gradient/);
+  assert.match(visualTune, /color:#53637c!important/);
+  assert.doesNotMatch(visualTune, /report-download-button\{[\s\S]{0,500}background:var\(--button-bg\)!important/);
 });
 
 test('preview card keeps filename at the top on mobile and desktop', () => {
@@ -49,6 +64,7 @@ test('parsed URL is returned to the beginning of the visible input', () => {
 });
 
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /resource-actions\.js\?v=20261015-3/);
-  assert.match(app, /result-polish\.js\?v=20261015-3/);
+  assert.match(app, /resource-actions\.js\?v=20261015-4/);
+  assert.match(app, /result-polish\.js\?v=20261015-4/);
+  assert.match(app, /result-visual-tune\.js\?v=20261015-4/);
 });
