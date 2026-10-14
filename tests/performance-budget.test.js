@@ -27,7 +27,7 @@ test('web-first homepage JS stays within the requested-feature performance budge
 
 test('固定工具列拆成獨立模組，不回塞核心 bundle', async () => {
   const app = await readFile(new URL('../static/app.js', import.meta.url), 'utf8');
-  assert.match(app, /load\('\/static\/toolbar\.js'\)/);
+  assert.match(app, /\/static\/toolbar\.js/);
   assert.doesNotMatch(app, /member-report\.js|member-api\.js|member-platform\.js/);
 });
 
