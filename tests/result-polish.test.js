@@ -76,7 +76,7 @@ test('parsed URL is returned to the beginning of the visible input', () => {
 test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
   assert.match(app, /document\.createElement\('textarea'\)/);
   assert.match(app, /u\.replaceWith\(t\)/);
-  assert.match(app, /url-field-wrap\.js\?v=20261015-5/);
+  assert.match(app, /url-field-wrap\.js\?5/);
   assert.match(urlFieldWrap, /l\*3/);
   assert.match(urlFieldWrap, /font:700 16px\/1\.35/);
   assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
@@ -84,7 +84,7 @@ test('URL field becomes a smaller auto-growing three-line textarea before handle
 });
 
 test('result UI scripts are cache-busted and loaded in order', () => {
-  assert.match(app, /result-loader\.js\?v=20261015-5/);
+  assert.match(app, /result-loader\.js\?5/);
   assert.match(resultLoader, /resource-actions\.js\?v=20261015-5/);
   assert.match(resultLoader, /result-polish\.js\?v=20261015-5/);
   assert.match(resultLoader, /result-visual-tune\.js\?v=20261015-5/);
