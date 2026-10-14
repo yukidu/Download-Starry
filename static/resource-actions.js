@@ -26,33 +26,54 @@
 
   if (!api || !platform || !result || !grid || !videoButton || !audioButton) return;
 
+  document.querySelector('#video-download-actions .quality-display')?.remove();
+
   const shareIcon = '<svg class="resource-share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const css = document.createElement('style');
   css.id = 'downloadstarry-resource-actions-style';
   css.textContent = `
-#video-download-actions .download-action-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
-#video-download-actions .download-action-grid>.download-action-button{min-width:0!important;width:100%!important;border:0!important;background:var(--button-bg)!important;color:var(--button-text)!important;white-space:nowrap!important}
-#video-download-actions .download-action-grid>.download-action-button:hover{background:var(--button-bg)!important;color:var(--button-text)!important;filter:brightness(1.08)}
-#video-download-actions .resource-share-button{display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important}
-#video-download-actions .resource-share-icon{width:17px;height:17px;flex:0 0 17px;stroke:currentColor}
+#video-download-actions .download-action-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
+#video-download-actions .resource-action-group{display:grid!important;grid-template-rows:auto 1fr!important;gap:5px!important;min-width:0!important;padding:6px!important;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line))!important;border-radius:14px!important;background:color-mix(in srgb,var(--soft-bg) 74%,transparent)!important}
+#video-download-actions .resource-action-group-label{display:block!important;text-align:center!important;color:var(--muted)!important;font:800 11px/1.15 "Noto Sans TC",sans-serif!important;letter-spacing:.08em!important}
+#video-download-actions .resource-action-group-buttons{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;min-width:0!important}
+#video-download-actions .resource-action-group .download-action-button{min-width:0!important;width:100%!important;min-height:62px!important;padding:8px 3px!important;border:0!important;background:var(--button-bg)!important;color:var(--button-text)!important;white-space:nowrap!important}
+#video-download-actions .resource-action-group .download-action-button:hover{background:var(--button-bg)!important;color:var(--button-text)!important;filter:brightness(1.08)}
+#video-download-actions .resource-share-button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important}
+#video-download-actions .resource-share-icon{width:34px!important;height:34px!important;flex:0 0 34px!important;stroke:currentColor!important}
 #video-download-actions .report-download-button{grid-column:1/-1!important;line-height:1.25!important;white-space:normal!important;background:var(--button-bg)!important;color:var(--button-text)!important}
-@media(min-width:651px){
-  .media-card>.media-meta{min-width:0!important;overflow:hidden!important}
-  .media-card>.media-meta>span{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-  .media-card>.media-meta h2{display:block!important;width:100%!important;max-width:100%!important;margin:5px 0 0!important;line-height:1.35!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+.media-card.media-source-link::after{content:none!important;display:none!important}
+.media-card{display:grid!important;grid-template-columns:190px minmax(0,1fr)!important;grid-template-areas:"thumb meta" "sub meta"!important;column-gap:19px!important;row-gap:8px!important;align-items:start!important}
+.media-card>.thumb-wrap{grid-area:thumb!important;width:190px!important;height:107px!important;margin:0!important}
+.media-card>.media-meta{grid-area:meta!important;min-width:0!important;width:100%!important;align-self:start!important;padding-right:0!important;overflow:hidden!important}
+.media-card>.media-meta>span{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.media-card>.media-meta h2{display:block!important;width:100%!important;max-width:100%!important;margin:5px 0 0!important;line-height:1.35!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+.media-card>#subtitle-download-actions{grid-area:sub!important}
+@media(max-width:650px){
+  .media-card{display:grid!important;grid-template-columns:minmax(118px,42%) minmax(0,1fr)!important;grid-template-areas:"thumb meta" "sub meta"!important;column-gap:10px!important;row-gap:7px!important;width:100%!important;align-items:start!important}
+  .media-card>.thumb-wrap{grid-area:thumb!important;width:100%!important;height:auto!important;aspect-ratio:16/9!important;margin:0!important;min-width:0!important}
+  .media-card>.media-meta{grid-area:meta!important;order:initial!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important;align-self:start!important}
+  .media-card>.media-meta>span{display:block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  .media-card>.media-meta h2{display:-webkit-box!important;width:100%!important;margin:3px 0 0!important;font-size:15px!important;line-height:1.35!important;-webkit-line-clamp:4!important;-webkit-box-orient:vertical!important;overflow:hidden!important;word-break:break-word!important}
+  .media-card>#subtitle-download-actions{grid-area:sub!important;order:initial!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important}
 }
 @media(max-width:560px){
-  #video-download-actions .download-action-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important}
-  #video-download-actions .download-action-button{min-width:0!important;padding:11px 2px!important;font-size:11.5px!important;letter-spacing:-.02em!important}
-  #video-download-actions .resource-share-button{gap:3px!important}
-  #video-download-actions .resource-share-icon{width:13px;height:13px;flex-basis:13px}
+  #video-download-actions .download-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+  #video-download-actions .resource-action-group{padding:5px!important;border-radius:12px!important;gap:4px!important}
+  #video-download-actions .resource-action-group-buttons{gap:4px!important}
+  #video-download-actions .resource-action-group .download-action-button{min-height:62px!important;padding:6px 1px!important;font-size:10.5px!important;letter-spacing:-.03em!important}
+  #video-download-actions .resource-share-button{gap:1px!important}
+  #video-download-actions .resource-share-icon{width:32px!important;height:32px!important;flex-basis:32px!important}
   #video-download-actions .report-download-button{font-size:13px!important;padding-left:8px!important;padding-right:8px!important}
 }
 @media(max-width:380px){
-  #video-download-actions .download-action-grid{gap:4px!important}
-  #video-download-actions .download-action-button{font-size:10.5px!important;padding-left:1px!important;padding-right:1px!important}
-  #video-download-actions .resource-share-icon{width:12px;height:12px;flex-basis:12px}
+  #video-download-actions .download-action-grid{gap:5px!important}
+  #video-download-actions .resource-action-group{padding:4px!important}
+  #video-download-actions .resource-action-group-buttons{gap:3px!important}
+  #video-download-actions .resource-action-group .download-action-button{font-size:9.5px!important;padding-left:0!important;padding-right:0!important}
+  #video-download-actions .resource-share-icon{width:30px!important;height:30px!important;flex-basis:30px!important}
+  .media-card{grid-template-columns:minmax(108px,40%) minmax(0,1fr)!important;column-gap:8px!important}
+  .media-card>.media-meta h2{font-size:14px!important}
 }
 `;
   document.head.appendChild(css);
@@ -75,16 +96,26 @@
     return button;
   };
 
+  const makeGroup = (className, label) => {
+    const group = document.createElement('div');
+    group.className = `resource-action-group ${className}`;
+    group.innerHTML = `<span class="resource-action-group-label">${label}</span><div class="resource-action-group-buttons"></div>`;
+    return group;
+  };
+
   const shareVideo = makeShareButton('share-video-button', '分享影片', 'video');
   const shareAudio = makeShareButton('share-audio-button', '分享音檔', 'audio');
+  const videoGroup = makeGroup('resource-action-group-video', '影片');
+  const audioGroup = makeGroup('resource-action-group-audio', '音檔');
+  videoGroup.querySelector('.resource-action-group-buttons')?.append(videoButton, shareVideo);
+  audioGroup.querySelector('.resource-action-group-buttons')?.append(audioButton, shareAudio);
 
   if (reportButton) {
     reportButton.innerHTML = '回報當前資源無法下載';
     reportButton.setAttribute('aria-label', '回報當前資源無法下載');
   }
 
-  grid.style.setProperty('grid-template-columns', 'repeat(4,minmax(0,1fr))', 'important');
-  grid.append(videoButton, shareVideo, audioButton, shareAudio);
+  grid.replaceChildren(videoGroup, audioGroup);
   if (reportButton) grid.append(reportButton);
 
   const showMessage = text => {
