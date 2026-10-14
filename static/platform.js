@@ -65,6 +65,27 @@
     },
   });
 
+  const sharing = Object.freeze({
+    get canShareFiles() {
+      const adapter = native()?.sharing;
+      return Boolean(adapter?.shareFile || adapter?.shareFiles || (!runtime.isCapacitor && navigator.share));
+    },
+    async shareFile(file, {title = '', text = ''} = {}) {
+      if (!(file instanceof File)) throw new Error('找不到可分享的檔案');
+      const adapter = native()?.sharing;
+      if (adapter?.shareFile) return adapter.shareFile({file, title, text, filename: file.name});
+      if (adapter?.shareFiles) return adapter.shareFiles({files: [file], title, text});
+      if (!runtime.isCapacitor && typeof navigator.share === 'function') {
+        const payload = {files: [file], title, text};
+        if (typeof navigator.canShare === 'function' && !navigator.canShare({files: [file]})) {
+          throw new Error('目前這台裝置不支援直接分享下載檔案');
+        }
+        return navigator.share(payload);
+      }
+      throw new Error('目前這台裝置不支援原生檔案分享');
+    },
+  });
+
   const lifecycle = Object.freeze({
     onPageHide(handler) {
       window.addEventListener('pagehide', handler);
@@ -138,5 +159,5 @@
     },
   });
 
-  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, lifecycle, pwa, notifications});
+  window.SaveVideoPlatform = Object.freeze({runtime, clipboard, files, sharing, lifecycle, pwa, notifications});
 })();
