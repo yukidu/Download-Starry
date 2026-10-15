@@ -42,5 +42,6 @@ test('member advanced UI has fresh lazy-load cache versions', () => {
   assert.match(loader, /share-one-tap\.js\?v=20261015-4/);
   assert.match(loader, /advanced-member\.js\?v=20261015-1/);
   assert.match(loader, /advanced-member\.css\?v=20261015-1/);
-  assert.match(app, /result-loader\.js\?d/);
+  assert.match(loader, /advanced-preview-guard\.js\?v=20261015-1/);
+  assert.match(app, /result-loader\.js\?e/);
 });
