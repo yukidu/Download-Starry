@@ -16,8 +16,14 @@ test('parsed video and audio action groups always use two equal full-width colum
   assert.doesNotMatch(layout, /viewportRight/);
 });
 
+test('download progress sits directly above the report button', () => {
+  assert.match(layout, /grid\.insertBefore\(progressPanel, reportButton\)/);
+  assert.match(layout, /result-download-progress/);
+  assert.match(layout, /restoreProgressPanel/);
+});
+
 test('result layout cache version is refreshed together', () => {
-  assert.match(loader, /result-layout\.js\?v=20261015-9/);
+  assert.match(loader, /result-layout\.js\?v=20261015-10/);
   assert.match(loader, /syncActionWidth/);
-  assert.match(app, /result-loader\.js\?9/);
+  assert.match(app, /result-loader\.js\?a/);
 });
