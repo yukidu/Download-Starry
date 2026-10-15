@@ -217,3 +217,16 @@
 .downloader::before {
   display: none;
 }
+
+/* 手機效能：移除大型漂浮光球與全畫面光帶掃過。 */
+.cosmic-orb {
+  display: none !important;
+  animation: none !important;
+  filter: none !important;
+}
+
+body::after {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
