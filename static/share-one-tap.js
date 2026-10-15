@@ -5,12 +5,10 @@
   const api = window.SaveVideoAPI;
   const platform = window.SaveVideoPlatform;
   const result = document.getElementById('result');
-  const videoActions = document.getElementById('video-download-actions');
   const sourceUrl = document.getElementById('download-url');
   const visibleUrl = document.getElementById('url');
   const qualityInput = document.getElementById('quality');
   const titleNode = document.getElementById('title');
-  const message = document.getElementById('message');
   const progressPanel = document.getElementById('download-progress');
   const progressBar = document.getElementById('progress-bar');
   const progressTrack = document.querySelector('.progress-track');
@@ -20,6 +18,8 @@
   const progressSpeed = document.getElementById('progress-speed');
   const progressEta = document.getElementById('progress-eta');
   const stopButton = document.getElementById('stop-download');
+  const videoDownloadButton = document.getElementById('download-video-button');
+  const audioDownloadButton = document.getElementById('download-audio-button');
   if (!api || !platform || !result || !sourceUrl) return;
 
   const replaceShareButton = id => {
@@ -33,12 +33,6 @@
   const shareVideo = replaceShareButton('share-video-button');
   const shareAudio = replaceShareButton('share-audio-button');
   if (!shareVideo || !shareAudio) return;
-
-  const clearMessage = () => {
-    if (!message) return;
-    message.textContent = '';
-    message.classList.remove('show');
-  };
 
   let sharePlatformPromise = null;
   const loadSharePlatform = () => {
@@ -92,15 +86,13 @@
     if (!button) return;
     const icon = button.querySelector('.resource-share-icon')?.outerHTML || '';
     button.innerHTML = `${icon}${text}`;
-    button.setAttribute('aria-label', text === '分享' ? `分享${typeName(type)}` : `${typeName(type)}${text}`);
+    button.setAttribute('aria-label', text === '分享' ? `分享${typeName(type)}` : text);
   };
 
-  const setShareReady = (type, ready) => {
-    const button = buttonFor(type);
-    if (!button) return;
-    button.disabled = !ready;
-    button.dataset.shareReady = ready ? '1' : '0';
-    setShareLabel(type, ready ? '分享' : '準備中');
+  const setAllActionDisabled = disabled => {
+    [videoDownloadButton, audioDownloadButton, shareVideo, shareAudio].forEach(button => {
+      if (button) button.disabled = disabled;
+    });
   };
 
   const placeProgress = () => {
@@ -117,12 +109,16 @@
     progressPanel.classList.remove('processing');
     if (progressBar) progressBar.style.width = '0%';
     progressTrack?.setAttribute('aria-valuenow', '0');
-    if (progressStatus) progressStatus.textContent = `背景準備${typeName(type)}分享檔案`;
+    if (progressStatus) progressStatus.textContent = `正在準備${typeName(type)}分享檔案`;
     if (progressPercent) progressPercent.textContent = '0%';
     if (progressSize) progressSize.textContent = '';
     if (progressSpeed) progressSpeed.textContent = '';
     if (progressEta) progressEta.textContent = '';
-    if (stopButton) stopButton.hidden = true;
+    if (stopButton) {
+      stopButton.hidden = false;
+      stopButton.disabled = false;
+      stopButton.textContent = '■ 停止下載';
+    }
   };
 
   const updateProgress = (type, data) => {
@@ -132,14 +128,13 @@
     progressPanel.classList.toggle('processing', data.status === 'processing');
     if (progressBar) progressBar.style.width = `${percent}%`;
     progressTrack?.setAttribute('aria-valuenow', String(Math.round(percent)));
-    if (progressStatus) progressStatus.textContent = `背景準備${typeName(type)}分享檔案`;
+    if (progressStatus) progressStatus.textContent = `正在準備${typeName(type)}分享檔案`;
     if (progressPercent) progressPercent.textContent = `${Math.round(percent)}%`;
     const downloaded = formatBytes(Number(data.downloaded_bytes));
     const total = formatBytes(Number(data.total_bytes));
     if (progressSize) progressSize.textContent = downloaded ? `${downloaded}${total ? ` / ${total}` : ''}` : '';
     if (progressSpeed) progressSpeed.textContent = data.speed ? `${formatBytes(Number(data.speed))}/s` : '';
     if (progressEta) progressEta.textContent = Number(data.eta) > 0 ? `剩餘 ${Math.ceil(Number(data.eta))} 秒` : '';
-    if (stopButton) stopButton.hidden = true;
   };
 
   const sharePayload = type => {
@@ -149,131 +144,127 @@
 
   const cache = {video: null, audio: null};
   let generation = 0;
-  let activeWarmJobId = null;
+  let activeJobId = null;
   let activeTransferController = null;
-  let preparePromise = null;
+  let activeType = null;
+
+  const resetButtons = () => {
+    shareVideo.disabled = false;
+    shareAudio.disabled = false;
+    shareVideo.dataset.shareReady = '0';
+    shareAudio.dataset.shareReady = '0';
+    setShareLabel('video', '分享');
+    setShareLabel('audio', '分享');
+  };
 
   const clearCache = () => {
     cache.video = null;
     cache.audio = null;
-    setShareReady('video', false);
-    setShareReady('audio', false);
+    resetButtons();
   };
 
-  const cancelWarmup = () => {
+  const cancelPreparation = () => {
     generation += 1;
-    const jobId = activeWarmJobId;
-    activeWarmJobId = null;
+    const jobId = activeJobId;
+    activeJobId = null;
+    activeType = null;
     activeTransferController?.abort();
     activeTransferController = null;
-    preparePromise = null;
     if (jobId) void api.cancel(jobId).catch(() => {});
+    setAllActionDisabled(false);
+    if (stopButton) stopButton.hidden = true;
   };
 
-  const prepareType = async (type, token) => {
+  const prepareShare = async type => {
+    if (activeType) return;
     const url = String(sourceUrl.value || '').trim();
-    if (!url || token !== generation) return false;
+    if (!url) return;
 
+    const token = ++generation;
     const key = shareKey(type);
-    if (cache[type]?.key === key && cache[type]?.file) {
-      setShareReady(type, true);
-      return true;
-    }
-
-    setShareReady(type, false);
+    activeType = type;
+    setAllActionDisabled(true);
+    setShareLabel(type, '準備中…');
     resetProgress(type);
 
-    const startData = await api.startDownload({
-      url,
-      type,
-      quality: qualityInput?.value || 'best',
-      subtitle: '',
-    });
-    if (token !== generation) {
-      void api.cancel(startData.job_id).catch(() => {});
-      return false;
-    }
-    activeWarmJobId = startData.job_id;
-
-    let finished = null;
-    while (!finished && token === generation) {
-      await wait(750);
-      const data = await api.progress(activeWarmJobId);
-      updateProgress(type, data);
-      if (data.status === 'error') throw new Error(data.error || '下載失敗');
-      if (data.status === 'cancelled') return false;
-      if (data.status === 'finished') {
-        finished = {jobId: activeWarmJobId, filename: data.filename || filenameFor(type)};
-        activeWarmJobId = null;
+    try {
+      const startData = await api.startDownload({
+        url,
+        type,
+        quality: qualityInput?.value || 'best',
+        subtitle: '',
+      });
+      if (token !== generation) {
+        void api.cancel(startData.job_id).catch(() => {});
+        return;
       }
-    }
-    if (!finished || token !== generation) return false;
+      activeJobId = startData.job_id;
 
-    if (progressStatus) progressStatus.textContent = `正在載入${typeName(type)}分享檔案`;
-    activeTransferController = new AbortController();
-    const response = await api.fileResponse(finished.jobId, {signal: activeTransferController.signal});
-    const blob = await response.blob();
-    activeTransferController = null;
-    if (token !== generation) return false;
-
-    const responseType = String(blob.type || '').toLowerCase();
-    const file = new File([blob], finished.filename, {
-      type: !responseType || responseType === 'application/octet-stream' ? mimeFor(type) : responseType,
-    });
-    cache[type] = {key, file};
-
-    await loadSharePlatform();
-    if (token !== generation || cache[type]?.key !== key) return false;
-    setShareReady(type, true);
-    return true;
-  };
-
-  const prepareAll = async () => {
-    if (result.hidden || videoActions?.hidden || !String(sourceUrl.value || '').trim()) return false;
-    cancelWarmup();
-    clearCache();
-    clearMessage();
-    const token = generation;
-
-    const run = (async () => {
-      let videoReady = false;
-      let audioReady = false;
-      try {
-        videoReady = await prepareType('video', token);
-      } catch (_) {
-        if (token === generation && progressStatus) progressStatus.textContent = '影片分享準備失敗，可直接使用下載按鈕';
+      let finished = null;
+      while (!finished && token === generation) {
+        await wait(750);
+        const data = await api.progress(activeJobId);
+        updateProgress(type, data);
+        if (data.status === 'error') throw new Error(data.error || '分享檔案準備失敗');
+        if (data.status === 'cancelled') return;
+        if (data.status === 'finished') {
+          finished = {jobId: activeJobId, filename: data.filename || filenameFor(type)};
+          activeJobId = null;
+        }
       }
-      if (token !== generation) return false;
-      try {
-        audioReady = await prepareType('audio', token);
-      } catch (_) {
-        if (token === generation && progressStatus) progressStatus.textContent = '音檔分享準備失敗，可直接使用下載按鈕';
-      }
-      if (token !== generation) return false;
+      if (!finished || token !== generation) return;
 
-      if (videoReady && audioReady) {
-        if (progressStatus) progressStatus.textContent = '分享檔案已準備完成';
-        if (progressPercent) progressPercent.textContent = '100%';
-        setTimeout(() => {
-          if (token === generation && progressPanel) progressPanel.hidden = true;
-        }, 700);
-      }
-      return videoReady || audioReady;
-    })();
-
-    preparePromise = run.finally(() => {
-      if (preparePromise === run) preparePromise = null;
-      activeWarmJobId = null;
+      if (progressStatus) progressStatus.textContent = `正在載入${typeName(type)}分享檔案`;
+      activeTransferController = new AbortController();
+      const response = await api.fileResponse(finished.jobId, {signal: activeTransferController.signal});
+      const blob = await response.blob();
       activeTransferController = null;
-    });
-    return preparePromise;
+      if (token !== generation) return;
+
+      const responseType = String(blob.type || '').toLowerCase();
+      const file = new File([blob], finished.filename, {
+        type: !responseType || responseType === 'application/octet-stream' ? mimeFor(type) : responseType,
+      });
+      await loadSharePlatform();
+      if (token !== generation) return;
+
+      cache[type] = {key, file};
+      if (progressStatus) progressStatus.textContent = `${typeName(type)}已準備完成，請再按一次分享`;
+      if (progressPercent) progressPercent.textContent = '100%';
+      setAllActionDisabled(false);
+      const button = buttonFor(type);
+      if (button) {
+        button.dataset.shareReady = '1';
+        setShareLabel(type, '點此分享');
+      }
+      if (stopButton) stopButton.hidden = true;
+    } catch (error) {
+      if (error?.name !== 'AbortError' && token === generation) {
+        if (progressStatus) progressStatus.textContent = error?.message || '分享檔案準備失敗，請稍後再試';
+        if (progressPercent) progressPercent.textContent = '';
+      }
+      cache[type] = null;
+      setAllActionDisabled(false);
+      setShareLabel(type, '分享');
+      const button = buttonFor(type);
+      if (button) button.dataset.shareReady = '0';
+      if (stopButton) stopButton.hidden = true;
+    } finally {
+      if (token === generation) {
+        activeJobId = null;
+        activeTransferController = null;
+        activeType = null;
+      }
+    }
   };
 
   const sharePrepared = type => {
-    clearMessage();
     const cached = cache[type];
     const share = window.DownloadStarryMemberPlatform?.share;
-    if (!cached?.file || cached.key !== shareKey(type) || !share?.file) return;
+    if (!cached?.file || cached.key !== shareKey(type) || !share?.file) {
+      void prepareShare(type);
+      return;
+    }
 
     let shareResult;
     try {
@@ -288,11 +279,7 @@
       if (progressPanel) progressPanel.hidden = true;
     }).catch(() => {
       if (progressPanel) progressPanel.hidden = false;
-      if (progressStatus) progressStatus.textContent = '目前無法開啟手機分享選單，請改用下載按鈕';
-      if (progressPercent) progressPercent.textContent = '';
-      if (progressSize) progressSize.textContent = '';
-      if (progressSpeed) progressSpeed.textContent = '';
-      if (progressEta) progressEta.textContent = '';
+      if (progressStatus) progressStatus.textContent = '目前無法開啟手機分享選單，請再試一次';
     });
   };
 
@@ -300,31 +287,38 @@
   shareAudio.addEventListener('click', () => sharePrepared('audio'));
 
   const resetForNewUrl = () => {
-    cancelWarmup();
+    cancelPreparation();
     clearCache();
     if (progressPanel) progressPanel.hidden = true;
-    clearMessage();
   };
   visibleUrl?.addEventListener('input', resetForNewUrl);
 
   new MutationObserver(() => {
     if (result.hidden) resetForNewUrl();
-    else void prepareAll();
+    else {
+      clearCache();
+      if (progressPanel) progressPanel.hidden = true;
+    }
   }).observe(result, {attributes: true, attributeFilter: ['hidden']});
 
+  stopButton?.addEventListener('click', event => {
+    if (!activeJobId && !activeTransferController) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    cancelPreparation();
+    clearCache();
+    if (progressStatus) progressStatus.textContent = '已停止分享檔案準備';
+  }, true);
+
   platform.lifecycle.onPageHide(() => {
-    const jobId = activeWarmJobId;
+    const jobId = activeJobId;
     activeTransferController?.abort();
     if (jobId) platform.lifecycle.sendBeacon(api.cancelUrl(jobId));
   });
 
-  setShareReady('video', false);
-  setShareReady('audio', false);
-  void loadSharePlatform().catch(() => {});
-  queueMicrotask(() => { if (!result.hidden) void prepareAll(); });
-
+  resetButtons();
   window.DownloadStarryOneTapShare = Object.freeze({
-    prepare: prepareAll,
+    prepare: prepareShare,
     share: sharePrepared,
   });
 })();
