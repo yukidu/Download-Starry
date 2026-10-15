@@ -28,10 +28,10 @@
     ].forEach(id => document.getElementById(id)?.remove());
   };
 
-  window.DownloadStarryResultReady = loadStyle('/static/result-ui.css?v=20261015-9')
-    .then(() => loadScript('/static/resource-actions.js?v=20261015-9'))
-    .then(() => loadScript('/static/result-polish.js?v=20261015-9'))
-    .then(() => loadScript('/static/result-layout.js?v=20261015-9'))
+  window.DownloadStarryResultReady = loadStyle('/static/result-ui.css?v=20261015-8')
+    .then(() => loadScript('/static/resource-actions.js?v=20261015-8'))
+    .then(() => loadScript('/static/result-polish.js?v=20261015-8'))
+    .then(() => loadScript('/static/result-layout.js?v=20261015-8'))
     .then(() => {
       removeLegacyVisualLayers();
       window.DownloadStarryResultLayout?.syncActionWidth?.();

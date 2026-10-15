@@ -11,7 +11,6 @@
   const iosShareIcon = '<svg class="resource-share-icon resource-share-icon-ios" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const androidShareIcon = '<svg class="resource-share-icon resource-share-icon-android" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.7 10.7 6.6-4.1M8.7 13.3l6.6 4.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const genericShareIcon = '<svg class="resource-share-icon resource-share-icon-generic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const downloadIcon = '<svg class="resource-download-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const deviceName = () => platform?.runtime?.isIOS ? 'ios' : platform?.runtime?.isAndroid ? 'android' : 'web';
   const expectedIconClass = () => platform?.runtime?.isIOS ? 'resource-share-icon-ios' : platform?.runtime?.isAndroid ? 'resource-share-icon-android' : 'resource-share-icon-generic';
@@ -42,13 +41,6 @@
     button.dataset.shareDevice = deviceName();
   };
 
-  const renderDownloadButton = (button, label) => {
-    if (!button) return;
-    button.classList.add('resource-download-button');
-    button.innerHTML = `${downloadIcon}${label}`;
-    button.setAttribute('aria-label', label);
-  };
-
   const installCss = () => {
     if (document.getElementById('downloadstarry-result-polish-style')) return;
     const css = document.createElement('style');
@@ -68,14 +60,22 @@
 }
 #video-download-actions .resource-action-group{
   display:grid!important;
-  grid-template-rows:1fr!important;
-  gap:0!important;
+  grid-template-rows:auto 1fr!important;
+  gap:5px!important;
   width:100%!important;
   min-width:0!important;
   padding:0!important;
   border:0!important;
   border-radius:0!important;
   background:transparent!important;
+}
+#video-download-actions .resource-action-group-label{
+  display:block!important;
+  width:100%!important;
+  text-align:center!important;
+  color:var(--muted)!important;
+  font:800 11px/1.15 "Noto Sans TC",sans-serif!important;
+  letter-spacing:.08em!important;
 }
 #video-download-actions .resource-action-group-buttons{
   display:grid!important;
@@ -104,8 +104,7 @@
   color:var(--button-text)!important;
   filter:brightness(1.08);
 }
-#video-download-actions .resource-share-button,
-#video-download-actions .resource-download-button{
+#video-download-actions .resource-share-button{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -113,8 +112,7 @@
   gap:2px!important;
   text-align:center!important;
 }
-#video-download-actions .resource-share-icon,
-#video-download-actions .resource-download-icon{
+#video-download-actions .resource-share-icon{
   width:30px!important;
   height:30px!important;
   flex:0 0 30px!important;
@@ -122,13 +120,11 @@
 }
 #video-download-actions .report-download-button{
   grid-column:1/-1!important;
-  width:min(72%,420px)!important;
-  min-height:42px!important;
-  justify-self:center!important;
-  margin-top:0!important;
-  padding:8px 14px!important;
+  width:100%!important;
+  min-height:58px!important;
+  margin-top:2px!important;
   border-radius:14px!important;
-  line-height:1.2!important;
+  line-height:1.25!important;
   white-space:normal!important;
   background:var(--button-bg)!important;
   color:var(--button-text)!important;
@@ -218,8 +214,7 @@
     border-radius:13px!important;
     font-size:13px!important;
   }
-  #video-download-actions .resource-share-icon,
-  #video-download-actions .resource-download-icon{
+  #video-download-actions .resource-share-icon{
     width:31px!important;
     height:31px!important;
     flex-basis:31px!important;
@@ -253,7 +248,7 @@
 }
 @media(max-width:380px){
   #video-download-actions .download-action-grid{column-gap:8px!important;row-gap:8px!important}
-  #video-download-actions .resource-action-group{gap:0!important}
+  #video-download-actions .resource-action-group{gap:4px!important}
   #video-download-actions .resource-action-group-buttons{gap:4px!important}
   #video-download-actions .resource-action-group .download-action-button{
     min-height:60px!important;
@@ -261,10 +256,8 @@
     padding-right:1px!important;
     font-size:12px!important;
   }
-  #video-download-actions .resource-share-button,
-  #video-download-actions .resource-download-button{gap:1px!important}
-  #video-download-actions .resource-share-icon,
-  #video-download-actions .resource-download-icon{
+  #video-download-actions .resource-share-button{gap:1px!important}
+  #video-download-actions .resource-share-icon{
     width:28px!important;
     height:28px!important;
     flex-basis:28px!important;
@@ -280,19 +273,25 @@
     document.head.appendChild(css);
   };
 
-  const ensureActionGroup = (grid, className, firstButton, secondButton) => {
+  const ensureActionGroup = (grid, className, label, firstButton, secondButton) => {
     let group = grid.querySelector(`.${className}`);
     if (!group) {
       group = document.createElement('div');
       group.className = `resource-action-group ${className}`;
     }
+    let labelNode = group.querySelector('.resource-action-group-label');
+    if (!labelNode) {
+      labelNode = document.createElement('span');
+      labelNode.className = 'resource-action-group-label';
+    }
+    labelNode.textContent = label;
     let buttons = group.querySelector('.resource-action-group-buttons');
     if (!buttons) {
       buttons = document.createElement('div');
       buttons.className = 'resource-action-group-buttons';
     }
     buttons.replaceChildren(firstButton, secondButton);
-    group.replaceChildren(buttons);
+    group.replaceChildren(labelNode, buttons);
     return group;
   };
 
@@ -306,10 +305,8 @@
     const reportButton = document.getElementById('report-download-button');
     if (!result || !grid || !videoButton || !audioButton || !shareVideo || !shareAudio) return false;
 
-    renderDownloadButton(videoButton, '下載影片');
-    renderDownloadButton(audioButton, '下載音檔');
-    const videoGroup = ensureActionGroup(grid, 'resource-action-group-video', videoButton, shareVideo);
-    const audioGroup = ensureActionGroup(grid, 'resource-action-group-audio', audioButton, shareAudio);
+    const videoGroup = ensureActionGroup(grid, 'resource-action-group-video', '影片', videoButton, shareVideo);
+    const audioGroup = ensureActionGroup(grid, 'resource-action-group-audio', '音檔', audioButton, shareAudio);
     grid.replaceChildren(videoGroup, audioGroup);
     if (reportButton) grid.append(reportButton);
 
