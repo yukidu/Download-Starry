@@ -9,31 +9,36 @@ const urlFieldWrap = fs.readFileSync(new URL('../static/url-field-wrap.js', impo
 const resultLoader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
-test('four primary actions stay on one row as two full-width groups', () => {
+test('four primary actions stay on one row as two full-width groups without duplicate group titles', () => {
   assert.match(polish, /resource-action-group-video/);
   assert.match(polish, /resource-action-group-audio/);
-  assert.match(polish, /ensureActionGroup\(grid, 'resource-action-group-video', '影片', videoButton, shareVideo\)/);
-  assert.match(polish, /ensureActionGroup\(grid, 'resource-action-group-audio', '音檔', audioButton, shareAudio\)/);
+  assert.match(polish, /ensureActionGroup\(grid, 'resource-action-group-video', videoButton, shareVideo\)/);
+  assert.match(polish, /ensureActionGroup\(grid, 'resource-action-group-audio', audioButton, shareAudio\)/);
   assert.match(polish, /grid\.replaceChildren\(videoGroup, audioGroup\)/);
+  assert.doesNotMatch(polish, /resource-action-group-label/);
+  assert.doesNotMatch(resultUi, /resource-action-group-label/);
   assert.match(resultUi, /download-action-grid[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)!important/);
   assert.match(resultUi, /resource-action-group-buttons[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-  assert.match(resultUi, /report-download-button[\s\S]*grid-column:1\/-1!important[\s\S]*width:100%!important/);
+  assert.match(resultUi, /report-download-button[\s\S]*grid-column:1\/-1!important[\s\S]*width:min\(72%,420px\)!important/);
 });
 
 test('mobile action groups keep all four buttons inside screen width', () => {
   assert.match(resultUi, /#video-download-actions[\s\S]*width:100%!important/);
   assert.match(resultUi, /@media\(max-width:650px\)[\s\S]*column-gap:8px!important/);
   assert.match(resultUi, /resource-action-group \.download-action-button[\s\S]*font:800 14px/);
-  assert.match(resultUi, /resource-share-button[\s\S]*flex-direction:column!important/);
+  assert.match(resultUi, /resource-share-button,[\s\S]*resource-download-button[\s\S]*flex-direction:column!important/);
+  assert.match(resultUi, /resource-download-icon/);
   assert.match(resultUi, /width:33px!important/);
 });
 
-test('video and audio sections are visually separated with larger centered controls', () => {
+test('video and audio sections are visually separated and download buttons include icons', () => {
   assert.match(resultUi, /resource-action-group-video[\s\S]*linear-gradient/);
   assert.match(resultUi, /resource-action-group-audio[\s\S]*linear-gradient/);
-  assert.match(resultUi, /resource-action-group-label[\s\S]*font:900 25px/);
   assert.match(resultUi, /download-action-button[\s\S]*min-height:72px!important[\s\S]*width:100%!important/);
   assert.match(resultUi, /justify-content:stretch!important/);
+  assert.match(polish, /const downloadIcon/);
+  assert.match(polish, /renderDownloadButton\(videoButton, '下載影片'\)/);
+  assert.match(polish, /renderDownloadButton\(audioButton, '下載音檔'\)/);
 });
 
 test('action row uses fixed equal columns without measuring the clear button', () => {
@@ -43,11 +48,15 @@ test('action row uses fixed equal columns without measuring the clear button', (
   assert.match(resultLayout, /videoGroup\.style\.setProperty\('grid-column', '1', 'important'\)/);
   assert.match(resultLayout, /audioGroup\.style\.setProperty\('grid-column', '2', 'important'\)/);
   assert.match(resultLayout, /reportButton\.style\.setProperty\('grid-column', '1 \/ -1', 'important'\)/);
+  assert.match(resultLayout, /reportButton\.style\.setProperty\('justify-self', 'center', 'important'\)/);
+  assert.doesNotMatch(resultLayout, /reportButton\.style\.setProperty\('width'/);
   assert.doesNotMatch(resultLayout, /clear-url-button/);
   assert.doesNotMatch(resultLayout, /getBoundingClientRect/);
 });
 
-test('report button uses a pale non-black treatment', () => {
+test('report button uses a smaller pale non-black treatment', () => {
+  assert.match(resultUi, /report-download-button[\s\S]*width:min\(72%,420px\)!important/);
+  assert.match(resultUi, /report-download-button[\s\S]*min-height:42px!important/);
   assert.match(resultUi, /report-download-button[\s\S]*background:linear-gradient/);
   assert.match(resultUi, /color:#53637c!important/);
   assert.doesNotMatch(resultUi, /report-download-button\{[\s\S]{0,500}background:var\(--button-bg\)!important/);
@@ -77,25 +86,28 @@ test('parsed URL is returned to the beginning of the visible input', () => {
   assert.match(polish, /observer\.observe\(result, \{attributes: true, attributeFilter: \['hidden'\]\}\)/);
 });
 
-test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
+test('URL field auto-grows and strips advertising text before the first http URL', () => {
   assert.match(app, /document\.createElement\('textarea'\)/);
   assert.match(app, /u\.replaceWith\(t\)/);
-  assert.match(app, /url-field-wrap\.js\?5/);
+  assert.match(app, /url-field-wrap\.js\?6/);
   assert.match(urlFieldWrap, /l\*3/);
   assert.match(urlFieldWrap, /font:700 16px\/1\.35/);
   assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
+  assert.match(urlFieldWrap, /extractHttpUrl/);
+  assert.ok(urlFieldWrap.includes(String.raw`https?:\/\/`));
+  assert.match(urlFieldWrap, /f\.form\?\.addEventListener\('submit'/);
   assert.match(urlFieldWrap, /f\.form\?\.requestSubmit\(\)/);
 });
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?8/);
+  assert.match(app, /result-loader\.js\?9/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
-  assert.match(resultLoader, /result-ui\.css\?v=20261015-8/);
-  assert.match(resultLoader, /resource-actions\.js\?v=20261015-8/);
-  assert.match(resultLoader, /result-polish\.js\?v=20261015-8/);
-  assert.match(resultLoader, /result-layout\.js\?v=20261015-8/);
+  assert.match(resultLoader, /result-ui\.css\?v=20261015-9/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-9/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-9/);
+  assert.match(resultLoader, /result-layout\.js\?v=20261015-9/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
