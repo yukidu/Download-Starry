@@ -17,7 +17,22 @@ test('four primary actions stay on one row as two full-width groups', () => {
   assert.match(polish, /grid\.replaceChildren\(videoGroup, audioGroup\)/);
   assert.match(resultUi, /download-action-grid[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)!important/);
   assert.match(resultUi, /resource-action-group-buttons[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-  assert.match(resultUi, /report-download-button[\s\S]*grid-column:1\/-1!important[\s\S]*width:100%!important/);
+});
+
+test('button labels remove repeated media words but keep section headings', () => {
+  assert.match(polish, /renderDownloadButton\(videoButton, '下載'\)/);
+  assert.match(polish, /renderDownloadButton\(audioButton, '下載'\)/);
+  assert.match(polish, /renderShareButton\(shareVideo, '分享'\)/);
+  assert.match(polish, /renderShareButton\(shareAudio, '分享'\)/);
+  assert.doesNotMatch(polish, /'下載影片'|'下載音檔'|'分享影片'|'分享音檔'/);
+  assert.match(polish, /labelNode\.textContent = label/);
+});
+
+test('download buttons include a visible download icon', () => {
+  assert.match(polish, /resource-download-icon/);
+  assert.match(polish, /const renderDownloadButton/);
+  assert.match(polish, /button\.innerHTML = `\$\{downloadIcon\}\$\{label\}`/);
+  assert.match(polish, /button\.style\.setProperty\('flex-direction', 'column', 'important'\)/);
 });
 
 test('mobile action groups keep all four buttons inside screen width', () => {
@@ -42,15 +57,16 @@ test('action row uses fixed equal columns without measuring the clear button', (
   assert.match(resultLayout, /minmax\(0,1fr\) minmax\(0,1fr\)/);
   assert.match(resultLayout, /videoGroup\.style\.setProperty\('grid-column', '1', 'important'\)/);
   assert.match(resultLayout, /audioGroup\.style\.setProperty\('grid-column', '2', 'important'\)/);
-  assert.match(resultLayout, /reportButton\.style\.setProperty\('grid-column', '1 \/ -1', 'important'\)/);
   assert.doesNotMatch(resultLayout, /clear-url-button/);
   assert.doesNotMatch(resultLayout, /getBoundingClientRect/);
 });
 
-test('report button uses a pale non-black treatment', () => {
+test('report button is centered, narrower and shorter', () => {
   assert.match(resultUi, /report-download-button[\s\S]*background:linear-gradient/);
   assert.match(resultUi, /color:#53637c!important/);
-  assert.doesNotMatch(resultUi, /report-download-button\{[\s\S]{0,500}background:var\(--button-bg\)!important/);
+  assert.match(resultLayout, /width', 'min\(72%, 420px\)'/);
+  assert.match(resultLayout, /min-height', '42px'/);
+  assert.match(resultLayout, /justify-self', 'center'/);
 });
 
 test('preview card keeps filename at the top on mobile and desktop', () => {
@@ -77,25 +93,31 @@ test('parsed URL is returned to the beginning of the visible input', () => {
   assert.match(polish, /observer\.observe\(result, \{attributes: true, attributeFilter: \['hidden'\]\}\)/);
 });
 
-test('URL field becomes a smaller auto-growing three-line textarea before handlers mount', () => {
+test('URL field extracts the first http URL from pasted ad text', () => {
+  assert.match(app, /url-field-wrap\.js\?6/);
+  assert.match(urlFieldWrap, /match\(\/https\?:\\\/\\\/\\S\+\/i\)/);
+  assert.match(urlFieldWrap, /extractHttpUrl:u/);
+  assert.match(urlFieldWrap, /f\.form\?\.addEventListener\('submit'/);
+  assert.match(urlFieldWrap, /f\.form\?\.requestSubmit\(\)/);
+});
+
+test('URL field remains a smaller auto-growing three-line textarea before handlers mount', () => {
   assert.match(app, /document\.createElement\('textarea'\)/);
   assert.match(app, /u\.replaceWith\(t\)/);
-  assert.match(app, /url-field-wrap\.js\?5/);
   assert.match(urlFieldWrap, /l\*3/);
   assert.match(urlFieldWrap, /font:700 16px\/1\.35/);
   assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
-  assert.match(urlFieldWrap, /f\.form\?\.requestSubmit\(\)/);
 });
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?8/);
+  assert.match(app, /result-loader\.js\?9/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
-  assert.match(resultLoader, /result-ui\.css\?v=20261015-8/);
-  assert.match(resultLoader, /resource-actions\.js\?v=20261015-8/);
-  assert.match(resultLoader, /result-polish\.js\?v=20261015-8/);
-  assert.match(resultLoader, /result-layout\.js\?v=20261015-8/);
+  assert.match(resultLoader, /result-ui\.css\?v=20261015-9/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-9/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-9/);
+  assert.match(resultLoader, /result-layout\.js\?v=20261015-9/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
