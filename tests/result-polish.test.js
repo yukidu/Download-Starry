@@ -111,14 +111,14 @@ test('URL field remains a smaller auto-growing three-line textarea before handle
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?a/);
+  assert.match(app, /result-loader\.js\?b/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
   assert.match(resultLoader, /result-ui\.css\?v=20261015-10/);
   assert.match(resultLoader, /resource-actions\.js\?v=20261015-10/);
   assert.match(resultLoader, /result-polish\.js\?v=20261015-10/);
   assert.match(resultLoader, /result-layout\.js\?v=20261015-10/);
-  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-1/);
+  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-2/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
