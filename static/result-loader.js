@@ -34,7 +34,7 @@
     .then(() => loadScript('/static/result-layout.js?v=20261015-8'))
     .then(() => {
       removeLegacyVisualLayers();
-      window.DownloadStarryResultLayout?.syncActionLayout?.();
+      window.DownloadStarryResultLayout?.syncActionWidth?.();
       return true;
     })
     .catch(error => {
