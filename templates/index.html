@@ -5,6 +5,10 @@
   <meta name="integration-token" content="{{ integration_token }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0b1026">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/static/manifest.webmanifest">
   <title>繁星下載（串流影音下載）</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,40 +83,39 @@
       position: absolute;
       inset: 0;
       z-index: -1;
-      background: linear-gradient(110deg, transparent 28%, rgba(255,255,255,.54) 45%, transparent 62%);
-      transform: translateX(-125%);
-      animation: supportSheen 5.8s ease-in-out infinite;
+      background: radial-gradient(circle at 18% 0%, rgba(255, 255, 255, .90), transparent 30%);
+      opacity: .72;
       pointer-events: none;
     }
 
     .support-developer-button:hover {
       transform: translateY(-2px);
-      border-color: color-mix(in srgb, #d3ad62 68%, var(--accent));
+      border-color: color-mix(in srgb, #c6a15b 72%, var(--line));
       box-shadow:
-        0 22px 56px rgba(55, 45, 115, .22),
-        0 0 0 3px color-mix(in srgb, #d3ad62 12%, transparent),
-        inset 0 1px 0 rgba(255, 255, 255, .78);
+        0 22px 54px rgba(57, 48, 112, .20),
+        inset 0 1px 0 rgba(255, 255, 255, .82);
     }
 
     .support-developer-button:active {
-      transform: translateY(0) scale(.985);
+      transform: translateY(0);
     }
 
     .support-button-icon {
-      display: inline-grid;
+      display: inline-flex;
       width: 42px;
       height: 42px;
       flex: 0 0 42px;
-      place-items: center;
+      align-items: center;
+      justify-content: center;
       border-radius: 14px;
-      background: linear-gradient(145deg, #c9973e, #efca7b 52%, #8d73ff);
-      color: #fff;
-      box-shadow: 0 9px 22px rgba(120, 87, 39, .22);
+      background: linear-gradient(145deg, #2c2157, #5c4f8f);
+      color: #fff4d6;
+      box-shadow: 0 8px 24px rgba(44, 33, 87, .28);
     }
 
     .support-button-icon svg {
-      width: 23px;
-      height: 23px;
+      width: 27px;
+      height: 27px;
     }
 
     .support-button-copy {
@@ -122,358 +125,137 @@
       min-width: 0;
     }
 
+    .support-button-copy span:first-child {
+      white-space: nowrap;
+    }
+
     .support-button-divider {
-      color: color-mix(in srgb, #c39b4f 72%, var(--muted));
-      font-weight: 600;
-    }
-
-    body.dark-theme .support-developer-button {
-      background:
-        linear-gradient(135deg, rgba(27, 31, 52, .95), rgba(26, 24, 47, .92));
-      border-color: rgba(214, 177, 101, .34);
-      box-shadow:
-        0 20px 54px rgba(0, 0, 0, .42),
-        inset 0 1px 0 rgba(255, 255, 255, .08);
-    }
-
-    @keyframes supportSheen {
-      0%, 66% { transform: translateX(-125%); opacity: 0; }
-      76% { opacity: .9; }
-      100% { transform: translateX(125%); opacity: 0; }
-    }
-
-    @media (max-width: 700px) {
-      .downloader {
-        margin-top: 12px;
-      }
-      .url-row {
-        gap: 7px;
-      }
-      .url-row input {
-        flex: 1 1 100%;
-      }
-      .url-row .paste-url-button,
-      .url-row .clear-url-button,
-      .url-row #lookup-button {
-        min-width: 0;
-        flex: 1 1 0;
-        padding-left: 9px;
-        padding-right: 9px;
-      }
-      .support-cta-wrap {
-        margin-top: 22px;
-        padding-left: 0;
-        padding-right: 0;
-      }
-      .support-developer-button {
-        width: 100%;
-        min-height: 62px;
-        padding: 10px 14px;
-        border-radius: 18px;
-        font-size: 15px;
-      }
-      .support-button-icon {
-        width: 39px;
-        height: 39px;
-        flex-basis: 39px;
-        border-radius: 13px;
-      }
-      .support-button-copy {
-        gap: 7px;
-      }
-    }
-
-    @media (max-width: 390px) {
-      .url-row button {
-        width: auto;
-        margin-top: 0;
-        flex: 1 1 0;
-        padding-left: 6px;
-        padding-right: 6px;
-        font-size: 14px;
-      }
-      .support-developer-button {
-        gap: 9px;
-        font-size: 14px;
-      }
-      .support-button-copy {
-        gap: 5px;
-      }
+      color: color-mix(in srgb, #c6a15b 82%, var(--muted));
+      font-weight: 900;
     }
 
     @media (max-width: 560px) {
-      .download-action-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px;
+      .support-cta-wrap {
+        margin-top: 22px;
       }
-      .download-action-grid .download-button {
-        padding-left: 8px;
-        padding-right: 8px;
-        font-size: 15px;
+
+      .support-developer-button {
+        width: 100%;
+        padding: 10px 13px;
+        border-radius: 17px;
+        font-size: 14px;
+      }
+
+      .support-button-icon {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+        border-radius: 12px;
+      }
+
+      .support-button-icon svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .support-button-copy {
+        gap: 7px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="cosmic-scene" aria-hidden="true">
-    <span class="cosmic-orb cosmic-orb-a"></span>
-    <span class="cosmic-orb cosmic-orb-b"></span>
-    <span class="cosmic-orb cosmic-orb-c"></span>
-    <span class="cosmic-grid"></span>
-  </div>
-
-  <header id="site-header" class="site-header">
+  <header class="site-header" id="site-header">
     <div class="site-header-row">
-      <button class="site-brand" type="button" data-menu-action="home" aria-label="返回首頁">
-        <span class="site-brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M8.2 5.6v12.8c0 1.2 1.3 1.9 2.3 1.2l9-6.4c.9-.6.9-1.9 0-2.5l-9-6.3c-1-.7-2.3 0-2.3 1.2Z" fill="currentColor"/></svg>
-          <span class="site-brand-ring"></span>
-        </span>
+      <a class="site-brand" href="/" aria-label="回到繁星下載首頁">
+        <span class="site-brand-mark" aria-hidden="true"></span>
         <span class="site-brand-text">繁星下載</span>
-        <span class="site-brand-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      </button>
-
-      <div class="top-actions" aria-label="置頂主選單">
-        <button id="top-theme-toggle" class="top-action-button" type="button" aria-label="關燈" title="關燈">
-          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.3A8.4 8.4 0 0 1 8.7 3.6 8.7 8.7 0 1 0 20.4 15.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-
-      <button id="menu-toggle" class="hamburger-button" type="button" aria-label="主選單" aria-expanded="false" aria-controls="main-menu" title="開啟主選單">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span class="site-brand-wave" aria-hidden="true">〰</span>
+      </a>
+      <div class="top-actions"></div>
+      <button id="hamburger-button" class="hamburger-button" type="button" aria-label="開啟選單" aria-expanded="false" aria-controls="main-menu-panel">
+        <span></span><span></span><span></span>
       </button>
     </div>
-
-    <div id="main-menu" class="main-menu-shell" hidden>
-      <div class="main-menu-panel" role="menu" aria-label="主選單">
-        <button class="main-menu-row" type="button" role="menuitem" data-menu-action="home">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-          <span>回首頁</span>
-        </button>
-        <button class="main-menu-row" type="button" role="menuitem" data-menu-action="focus-url">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a4 4 0 0 0 5.7 0l2.1-2.1a4 4 0 0 0-5.7-5.7l-1.2 1.2M13.4 10.6a4 4 0 0 0-5.7 0l-2.1 2.1a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span>貼上影音連結</span>
-        </button>
-        <button id="menu-theme-toggle" class="main-menu-row" type="button" role="menuitem">
-          <svg class="menu-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.3A8.4 8.4 0 0 1 8.7 3.6 8.7 8.7 0 1 0 20.4 15.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg class="menu-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span id="menu-theme-label">關燈</span>
-        </button>
-        {% if not cloud_mode %}
-        <button id="open-wechat" class="main-menu-row" type="button" role="menuitem">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.4 5C4.9 5 2 7.3 2 10.2c0 1.7 1 3.2 2.5 4.2l-.7 2.3 2.7-1.3c.6.1 1.2.2 1.9.2.4 0 .8 0 1.2-.1-.4-.7-.6-1.5-.6-2.3 0-3.1 3-5.6 6.8-5.6h.2C14.8 6 11.8 5 8.4 5Z" fill="currentColor" opacity=".9"/><path d="M22 13.2c0-2.5-2.6-4.6-5.8-4.6s-5.8 2.1-5.8 4.6 2.6 4.6 5.8 4.6c.6 0 1.1-.1 1.7-.2l2.4 1.2-.6-2c1.4-.8 2.3-2.1 2.3-3.6Z" fill="currentColor"/></svg>
-          <span>微信影音號工具</span>
-        </button>
-        <button id="check-components" class="main-menu-row" type="button" role="menuitem">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          <span>檢查元件</span>
-        </button>
-        <span id="component-status" class="sr-only" role="status">啟動時檢查下載元件…</span>
-        {% endif %}
-      </div>
+    <div id="main-menu-panel" class="main-menu-panel" role="menu" hidden>
+      <button class="main-menu-row" type="button" role="menuitem" data-menu-action="home"><span aria-hidden="true">⌂</span><span>首頁</span></button>
+      <button class="main-menu-row" type="button" role="menuitem" data-menu-action="focus-url"><span aria-hidden="true">↗</span><span>貼上網址</span></button>
+      <button id="menu-theme-toggle" class="main-menu-row" type="button" role="menuitem"><span aria-hidden="true">◐</span><span>切換明暗</span></button>
     </div>
   </header>
 
   <main>
-    <section class="hero" aria-label="支援的平台">
-      <div class="platform-icons" aria-label="支援的平台" style="flex-wrap:wrap">
-        <span class="platform-icon platform-youtube" data-provider="youtube" title="YouTube" aria-label="YouTube">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.6.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2 12a29 29 0 0 0 .4 4.8 2.8 2.8 0 0 0 2 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22 12a29 29 0 0 0-.4-4.8Z" fill="currentColor"/><path d="m10 15.3 5-3.3-5-3.3v6.6Z" fill="white"/></svg>
-        </span>
-        <span class="platform-icon platform-instagram" data-provider="instagram" title="Instagram" aria-label="Instagram">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17.5" cy="6.6" r="1.25" fill="currentColor"/></svg>
-        </span>
-        <span class="platform-icon platform-facebook" data-provider="facebook" title="Facebook" aria-label="Facebook">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5h1.7V3.7c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2H8V13h2.8v8h3.4Z" fill="currentColor"/></svg>
-        </span>
-        <span class="platform-icon platform-wechat" data-provider="wechat" title="微信影音號／視頻號" aria-label="微信影音號／視頻號">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.2C4.8 4.2 2 6.5 2 9.3c0 1.6.9 3.1 2.4 4.1l-.7 2.2 2.6-1.2c.6.1 1.3.2 2 .2.5 0 1 0 1.4-.1a5.4 5.4 0 0 1-.5-2.2c0-3.1 2.9-5.5 6.6-5.5h.3c-1.3-1.6-4-2.6-6.8-2.6Z" fill="currentColor" opacity=".85"/><path d="M22 12.4c0-2.4-2.5-4.4-5.7-4.4-3.1 0-5.7 2-5.7 4.4s2.6 4.4 5.7 4.4c.6 0 1.2-.1 1.7-.2l2.3 1.2-.6-2c1.4-.8 2.3-2 2.3-3.4Z" fill="currentColor"/></svg>
-        </span>
-        <span class="platform-icon platform-ganjing" data-provider="ganjingworld" title="乾淨世界 Gan Jing World" aria-label="乾淨世界 Gan Jing World">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="9.7" r="7.2" fill="none" stroke="#2d56a3" stroke-width="1.45"/>
-            <path d="M4.9 9.7h14.2M12 2.5c-2 2-3 4.4-3 7.2s1 5.2 3 7.2M12 2.5c2 2 3 4.4 3 7.2s-1 5.2-3 7.2" fill="none" stroke="#2d56a3" stroke-width="1" stroke-linecap="round"/>
-            <text x="12" y="12.2" text-anchor="middle" fill="#2d56a3" font-size="6.1" font-weight="900">淨</text>
-            <text class="gjw-logo-text" x="12" y="22" text-anchor="middle" fill="#e86f16">GJW</text>
-          </svg>
-        </span>
-        <span class="platform-icon platform-odysee" data-provider="odysee" title="Odysee" aria-label="Odysee">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <defs><linearGradient id="odysee-logo-gradient" x1="2" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#f52d6d"/><stop offset="1" stop-color="#ff9c40"/></linearGradient></defs>
-            <circle cx="12" cy="12" r="9.5" fill="url(#odysee-logo-gradient)"/>
-            <circle cx="10.5" cy="7.2" r="2.05" fill="white"/>
-            <path d="M10.1 9.2c.9.1 1.7.6 2.2 1.3l1.6 2.2 2.1-1.1c.7-.4 1.4.6.8 1.2l-3.1 2.5-1.9-1.9-.4 3.8 2.2 1.6c.7.5.1 1.6-.7 1.3l-4.1-1.6-.4-4-2 1.7c-.7.6-1.7-.2-1.2-.9l2.6-4.2c.5-1.1 1.3-1.8 2.3-1.9Z" fill="white"/>
-            <circle cx="17.7" cy="6.2" r=".7" fill="white" opacity=".9"/>
-          </svg>
-        </span>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Starry.phd</p>
+        <h1>繁星下載</h1>
+        <p class="hero-subtitle">貼上網址，快速取得影片、音檔與字幕。</p>
       </div>
     </section>
 
-    <section class="downloader" aria-label="下載工具">
-      <div id="download-progress" class="download-progress top-download-progress" hidden aria-live="polite">
-        <div class="progress-heading">
-          <span id="progress-status">準備下載</span>
-          <div class="progress-actions"><strong id="progress-percent">0%</strong><button id="stop-download" class="stop-download" type="button" hidden>■ 停止下載</button></div>
+    <section class="downloader">
+      <form id="download-form">
+        <div class="url-row">
+          <input id="url" type="url" placeholder="貼上影片網址" autocomplete="off" inputmode="url" required>
+          <button id="paste-url-button" class="paste-url-button" type="button">貼上網址</button>
+          <button id="lookup-button" class="lookup-button" type="submit">解析網址</button>
+          <button id="clear-url-button" class="clear-url-button" type="button">清空</button>
         </div>
-        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="progress-bar" class="progress-bar"></div>
-        </div>
-        <div class="progress-detail"><span id="progress-size"></span><span id="progress-speed"></span><span id="progress-eta"></span></div>
-      </div>
-
-      <form id="lookup-form" class="url-row">
-        <span class="link-icon" aria-hidden="true">↗</span>
-        <input id="url" type="url" required autocomplete="off" placeholder="貼上影音／照片網址…" aria-label="影音或照片網址">
-        <button id="paste-url-button" class="paste-url-button" type="button">貼上網址</button>
-        <button id="clear-url-button" class="clear-url-button" type="button" disabled>清空</button>
-        <button id="lookup-button" type="submit">解析網址 <span>→</span></button>
       </form>
-      <div id="message" class="message" role="alert"></div>
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+      <div id="provider-icons" class="provider-icons" aria-label="支援平台"></div>
+    </section>
 
-      <div id="result" class="result" hidden>
-        <div class="media-card">
-          <div class="thumb-wrap"><img id="thumbnail" alt="內容縮圖"><span id="duration" class="duration"></span></div>
-          <div class="media-meta"><span id="channel"></span><h2 id="title"></h2></div>
+    <section id="result" class="result" hidden>
+      <div class="media-card">
+        <div class="thumb-wrap">
+          <img id="thumbnail" alt="影片縮圖" hidden>
         </div>
-
-        <div id="download-form">
-          <input id="download-url" name="url" type="hidden">
-          <input id="quality" name="quality" type="hidden" value="best">
-
-          <div id="video-download-actions" class="download-actions">
-            <div class="quality-display" aria-live="polite">
-              <span>下載畫質</span>
-              <strong id="highest-quality-label">最高畫質</strong>
-            </div>
-            <div class="download-action-grid">
-              <button id="download-video-button" class="download-button download-action-button" type="button" data-download-type="video"><span>↓</span> 下載影片</button>
-              <button id="download-audio-button" class="download-button download-action-button" type="button" data-download-type="audio"><span>♫</span> 下載音檔</button>
-            </div>
-          </div>
-
-          <div id="image-download-actions" class="download-actions" hidden>
-            <button id="download-image-button" class="download-button download-action-button" type="button" data-download-type="image"><span>↓</span> 下載照片</button>
-          </div>
-
-          <div id="subtitle-download-actions" class="download-actions subtitle-download-actions" hidden>
-            <label id="subtitle-group">選擇 CC 字幕<select id="subtitle-language" name="subtitle"></select></label>
-            <button id="download-subtitle-button" class="download-button download-action-button" type="button" data-download-type="subtitle"><span>CC</span> 下載 CC 字幕</button>
-          </div>
+        <div class="media-meta">
+          <span id="source-label" class="source-label"></span>
+          <h2 id="title"></h2>
+        </div>
+        <div id="subtitle-download-actions" class="subtitle-download-actions" hidden>
+          <label id="subtitle-group" for="subtitle-language">
+            <span>CC 字幕</span>
+            <select id="subtitle-language"></select>
+          </label>
+          <button id="download-subtitle-button" class="download-button subtitle-button" type="button">下載 CC 字幕</button>
         </div>
       </div>
 
-      <div class="support-cta-wrap">
-        <button id="support-developer-button" class="support-developer-button" type="button" title="贊助功能預留">
-          <span class="support-button-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M5 8h11v6.2A4.8 4.8 0 0 1 11.2 19H9.8A4.8 4.8 0 0 1 5 14.2V8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-              <path d="M16 10h1.5a2.5 2.5 0 1 1 0 5H16M8 5.5c0-1 1-1.4 1-2.5M12 5.5c0-1 1-1.4 1-2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <span class="support-button-copy">
-            <span>支持無廣告</span>
-            <span class="support-button-divider" aria-hidden="true">|</span>
-            <span>贊助開發者喝杯咖啡</span>
-          </span>
-        </button>
+      <div class="download-action-grid">
+        <button id="download-video-button" class="download-button download-action-button" type="button">下載影片</button>
+        <button id="share-video-button" class="download-button download-action-button" type="button">分享影片</button>
+        <button id="report-download-button" class="download-button download-action-button report-download-button" type="button">回報當前影片<br>無法下載</button>
+        <button id="download-audio-button" class="download-button download-action-button" type="button">下載音檔</button>
+        <button id="share-audio-button" class="download-button download-action-button" type="button">分享音檔</button>
+      </div>
+
+      <div id="download-progress" class="download-progress" hidden>
+        <div class="download-progress-topline"><span id="download-progress-label">準備中…</span><strong id="download-progress-value">0%</strong></div>
+        <div class="download-progress-track"><span id="download-progress-fill"></span></div>
       </div>
     </section>
+
+    <div class="support-cta-wrap">
+      <button id="support-developer-button" class="support-developer-button" type="button">
+        <span class="support-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 9h11v5.3A4.7 4.7 0 0 1 11.3 19H9.7A4.7 4.7 0 0 1 5 14.3V9Z"/>
+            <path d="M16 10h1.4a2.6 2.6 0 1 1 0 5.2H16"/>
+            <path d="M8 5.5c0 1.1 1 1.4 1 2.5M12 5.5c0 1.1 1 1.4 1 2.5"/>
+          </svg>
+        </span>
+        <span class="support-button-copy">
+          <span>支持無廣告</span>
+          <span class="support-button-divider" aria-hidden="true">|</span>
+          <span>贊助開發者喝杯咖啡</span>
+        </span>
+      </button>
+    </div>
   </main>
 
-  <dialog id="playlist-dialog" class="playlist-dialog">
-    <div class="playlist-dialog-icon">▤</div>
-    <h2>偵測到播放清單</h2>
-    <p id="playlist-description"></p>
-    <div class="playlist-dialog-actions">
-      <button id="playlist-single" class="dialog-secondary" type="button">只下載目前影片</button>
-      <button id="playlist-all" class="dialog-primary" type="button">下載全部</button>
-    </div>
-  </dialog>
-
-  {% if not cloud_mode %}
-  <dialog id="components-dialog" class="playlist-dialog" aria-labelledby="components-title">
-    <h2 id="components-title">下載元件</h2>
-    <div id="components-list"></div>
-    <p id="components-feedback" role="status"></p>
-    <div class="playlist-dialog-actions"><button id="components-later" class="dialog-secondary" type="button">關閉</button><button id="components-update" class="dialog-primary" type="button">更新勾選元件</button></div>
-  </dialog>
-  {% endif %}
-
   <script src="{{ url_for('static', filename='app.js') }}"></script>
-  <script>
-    (() => {
-      const form = document.getElementById('lookup-form');
-      const urlInput = document.getElementById('url');
-      const pasteButton = document.getElementById('paste-url-button');
-      const clearButton = document.getElementById('clear-url-button');
-      const lookupButton = document.getElementById('lookup-button');
-      const videoButton = document.getElementById('download-video-button');
-      const audioButton = document.getElementById('download-audio-button');
-
-      const requestLookup = () => {
-        if (!form || !urlInput || !lookupButton) return;
-        if (!urlInput.value.trim() || urlInput.disabled || lookupButton.disabled) return;
-        if (typeof form.requestSubmit === 'function') form.requestSubmit(lookupButton);
-        else lookupButton.click();
-      };
-
-      const syncClearButton = () => {
-        if (!clearButton || !urlInput) return;
-        clearButton.disabled = urlInput.disabled || !urlInput.value.trim();
-      };
-
-      urlInput?.addEventListener('paste', () => {
-        setTimeout(requestLookup, 0);
-      });
-
-      urlInput?.addEventListener('input', syncClearButton);
-      if (urlInput) {
-        new MutationObserver(syncClearButton).observe(urlInput, {attributes: true, attributeFilter: ['disabled']});
-      }
-      syncClearButton();
-
-      clearButton?.addEventListener('click', () => {
-        if (!urlInput || urlInput.disabled) return;
-        urlInput.value = '';
-        urlInput.dispatchEvent(new Event('input', {bubbles: true}));
-        urlInput.focus();
-      });
-
-      pasteButton?.addEventListener('click', () => {
-        const handleClipboardFill = () => {
-          urlInput.removeEventListener('input', handleClipboardFill);
-          setTimeout(requestLookup, 0);
-        };
-        urlInput.addEventListener('input', handleClipboardFill);
-        setTimeout(() => urlInput.removeEventListener('input', handleClipboardFill), 5000);
-      });
-
-      const syncDownloadLabels = () => {
-        const replacements = [
-          [videoButton, '下載 MP4', '下載影片'],
-          [videoButton, 'MP4 已送出', '影片已送出'],
-          [audioButton, '下載 MP3', '下載音檔'],
-          [audioButton, 'MP3 已送出', '音檔已送出'],
-        ];
-        replacements.forEach(([button, from, to]) => {
-          if (!button || !button.innerHTML.includes(from)) return;
-          const next = button.innerHTML.replace(from, to);
-          if (next !== button.innerHTML) button.innerHTML = next;
-        });
-      };
-
-      syncDownloadLabels();
-      [videoButton, audioButton].forEach(button => {
-        if (!button) return;
-        new MutationObserver(syncDownloadLabels).observe(button, {childList: true, subtree: true, characterData: true});
-      });
-    })();
-  </script>
-  <script src="{{ url_for('static', filename='provider-ui.js') }}"></script>
-  <script src="{{ url_for('static', filename='ui.js') }}"></script>
-  {% if not cloud_mode %}
-  <script src="{{ url_for('static', filename='integration.js') }}"></script>
-  {% endif %}
 </body>
 </html>
