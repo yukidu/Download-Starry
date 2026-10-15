@@ -5,6 +5,7 @@ import {handleDownloadHistoryRequest, recordDownloadStart} from './history.js';
 import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
 import {enforceMemberReport, handleReportRepairRequest} from './report-repair.js';
 import {authenticatedDownloadStarryMember, handleFavoritesRequest} from './favorites.js';
+import {isSuperAdminRequest} from './super-admin.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -33,6 +34,22 @@ async function fetchHandler(request, env, ctx) {
   }
 
   const url = new URL(request.url);
+  const method = request.method.toUpperCase();
+  const reportManagementRequest =
+    (url.pathname === '/report' && ['GET', 'HEAD'].includes(method)) ||
+    (url.pathname === '/api/reports' && method === 'GET') ||
+    (url.pathname === '/api/report-repair/status' && method === 'POST') ||
+    (/^\/api\/reports\/[^/]+\/status$/.test(url.pathname) && method === 'POST');
+  if (reportManagementRequest) {
+    const allowed = await isSuperAdminRequest(request, env);
+    if (!allowed) {
+      if (url.pathname === '/report') return Response.redirect(`${url.origin}/`, 302);
+      return Response.json({error: '只有超級管理員可以使用此功能'}, {
+        status: 403,
+        headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'},
+      });
+    }
+  }
 
   if (url.pathname === '/api/favorites') {
     try {
