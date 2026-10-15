@@ -2,6 +2,22 @@
 (() => {
   if (window.DownloadStarryResultLayout) return;
 
+  const progressPanel = document.getElementById('download-progress');
+  const progressHome = progressPanel?.parentElement || null;
+  const progressAnchor = progressPanel?.nextElementSibling || null;
+
+  const restoreProgressPanel = () => {
+    if (!progressPanel || !progressHome) return;
+    if (progressAnchor?.parentElement === progressHome) progressHome.insertBefore(progressPanel, progressAnchor);
+    else progressHome.prepend(progressPanel);
+    progressPanel.classList.add('top-download-progress');
+    progressPanel.classList.remove('result-download-progress');
+    progressPanel.style.removeProperty('grid-column');
+    progressPanel.style.removeProperty('width');
+    progressPanel.style.removeProperty('justify-self');
+    progressPanel.style.removeProperty('margin');
+  };
+
   const syncActionLayout = () => {
     const actions = document.getElementById('video-download-actions');
     const grid = actions?.querySelector('.download-action-grid');
@@ -25,6 +41,18 @@
     videoGroup.style.setProperty('max-width', 'none', 'important');
     audioGroup.style.setProperty('max-width', 'none', 'important');
 
+    if (!actions.hidden && progressPanel && reportButton) {
+      grid.insertBefore(progressPanel, reportButton);
+      progressPanel.classList.remove('top-download-progress');
+      progressPanel.classList.add('result-download-progress');
+      progressPanel.style.setProperty('grid-column', '1 / -1', 'important');
+      progressPanel.style.setProperty('width', '100%', 'important');
+      progressPanel.style.setProperty('justify-self', 'stretch', 'important');
+      progressPanel.style.setProperty('margin', '0', 'important');
+    } else if (actions.hidden) {
+      restoreProgressPanel();
+    }
+
     if (reportButton) {
       reportButton.style.setProperty('grid-column', '1 / -1', 'important');
       reportButton.style.setProperty('width', 'min(72%, 420px)', 'important');
@@ -37,8 +65,14 @@
 
   syncActionLayout();
 
+  const actions = document.getElementById('video-download-actions');
+  if (actions && 'MutationObserver' in window) {
+    new MutationObserver(syncActionLayout).observe(actions, {attributes: true, attributeFilter: ['hidden']});
+  }
+
   window.DownloadStarryResultLayout = Object.freeze({
     syncActionLayout,
     syncActionWidth: syncActionLayout,
+    restoreProgressPanel,
   });
 })();
