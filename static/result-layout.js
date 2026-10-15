@@ -27,7 +27,7 @@
 
     if (reportButton) {
       reportButton.style.setProperty('grid-column', '1 / -1', 'important');
-      reportButton.style.setProperty('justify-self', 'center', 'important');
+      reportButton.style.setProperty('width', '100%', 'important');
     }
   };
 
