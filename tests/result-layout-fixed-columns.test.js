@@ -17,7 +17,7 @@ test('parsed video and audio action groups always use two equal full-width colum
 });
 
 test('result layout cache version is refreshed together', () => {
-  assert.match(loader, /result-layout\.js\?v=20261015-8/);
+  assert.match(loader, /result-layout\.js\?v=20261015-9/);
   assert.match(loader, /syncActionWidth/);
-  assert.match(app, /result-loader\.js\?8/);
+  assert.match(app, /result-loader\.js\?9/);
 });
