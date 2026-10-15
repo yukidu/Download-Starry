@@ -27,7 +27,11 @@
 
     if (reportButton) {
       reportButton.style.setProperty('grid-column', '1 / -1', 'important');
-      reportButton.style.setProperty('width', '100%', 'important');
+      reportButton.style.setProperty('width', 'min(72%, 420px)', 'important');
+      reportButton.style.setProperty('min-height', '42px', 'important');
+      reportButton.style.setProperty('padding', '8px 14px', 'important');
+      reportButton.style.setProperty('margin-top', '0', 'important');
+      reportButton.style.setProperty('justify-self', 'center', 'important');
     }
   };
 
