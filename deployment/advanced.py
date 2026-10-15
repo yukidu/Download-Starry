@@ -1,6 +1,7 @@
 """Member-only advanced preview and trim jobs for the cloud container."""
 from __future__ import annotations
 
+import selectors
 import shutil
 import subprocess
 import tempfile
@@ -33,6 +34,77 @@ def _cancelled(job_id: str) -> bool:
     with download_jobs_lock:
         job = download_jobs.get(job_id)
         return not job or job.get("cancel_event").is_set()
+
+
+def _stop_process(process: subprocess.Popen) -> None:
+    if process.poll() is not None:
+        return
+    process.terminate()
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=2)
+
+
+def _run_trim_ffmpeg(job_id: str, command: list[str], duration: float) -> None:
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    if process.stdout is None or process.stderr is None:
+        _stop_process(process)
+        raise RuntimeError("ffmpeg progress pipe unavailable")
+
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+    deadline = time.monotonic() + 420
+    last_progress = 77.5
+
+    try:
+        while True:
+            if _cancelled(job_id):
+                _stop_process(process)
+                raise DownloadCancelled("進階處理已停止")
+            if time.monotonic() >= deadline:
+                _stop_process(process)
+                raise subprocess.TimeoutExpired(command, 420)
+            if process.poll() is not None:
+                break
+
+            for key, _ in selector.select(timeout=0.5):
+                line = key.fileobj.readline()
+                if not line:
+                    continue
+                name, separator, raw_value = line.strip().partition("=")
+                if not separator or name not in {"out_time_us", "out_time_ms"}:
+                    continue
+                try:
+                    elapsed = max(0.0, float(raw_value) / 1_000_000)
+                except (TypeError, ValueError):
+                    continue
+                ratio = min(1.0, elapsed / max(duration, 0.5))
+                progress = round(min(98.0, 78.0 + ratio * 20.0), 1)
+                if progress <= last_progress:
+                    continue
+                last_progress = progress
+                update_job(
+                    job_id,
+                    status="processing",
+                    progress=progress,
+                    speed=None,
+                    eta=None,
+                    message=f"正在精準裁切影片 {min(99, round(ratio * 100))}%",
+                )
+
+        stderr = process.stderr.read()
+        if process.returncode:
+            raise subprocess.CalledProcessError(process.returncode, command, stderr=stderr)
+    finally:
+        selector.close()
 
 
 def _advanced_worker(
@@ -160,16 +232,17 @@ def _advanced_worker(
             raise DownloadCancelled("進階處理已停止")
         duration = max(0.5, trim_end - trim_start)
         result = Path(temp_dir) / "trimmed.mp4"
-        update_job(job_id, status="processing", progress=78, message="正在精準裁切影片")
+        update_job(job_id, status="processing", progress=78, message="正在精準裁切影片 0%")
         command = [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-nostats", "-stats_period", "0.5", "-progress", "pipe:1",
             "-ss", f"{trim_start:.3f}", "-i", str(source), "-t", f"{duration:.3f}",
             "-map", "0:v:0?", "-map", "0:a:0?",
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
+            "-c:v", "libx264", "-preset", "superfast", "-crf", "21",
             "-c:a", "aac", "-b:a", "160k",
             "-movflags", "+faststart", str(result),
         ]
-        subprocess.run(command, check=True, timeout=420)
+        _run_trim_ffmpeg(job_id, command, duration)
         if not result.is_file() or result.stat().st_size <= 0:
             raise RuntimeError("trim output missing")
         source.unlink(missing_ok=True)
