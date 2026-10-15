@@ -230,3 +230,24 @@ body::after {
   display: none !important;
   animation: none !important;
 }
+
+/* 漢堡選單開啟時：選單保持清晰，其餘全頁模糊＋深色遮罩。 */
+.main-menu-shell:not([hidden])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(15,23,42,0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+body.dark-theme .main-menu-shell:not([hidden])::before {
+  background: rgba(3,8,18,0.8);
+}
+
+.main-menu-shell:not([hidden]) .main-menu-panel {
+  position: relative;
+  z-index: 1;
+}
