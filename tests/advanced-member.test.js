@@ -68,5 +68,5 @@ test('進階處理在 Worker 層強制要求會員登入', () => {
 
 test('Cloud container 啟用進階裁切入口', () => {
   assert.match(dockerfile, /deployment\/advanced\.py/);
-  assert.match(dockerfile, /deployment\/advanced_server:app/);
+  assert.match(dockerfile, /deployment\.advanced_server:app/);
 });
