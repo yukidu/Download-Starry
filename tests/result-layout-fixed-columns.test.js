@@ -25,5 +25,5 @@ test('download progress sits directly above the member advanced toggle', () => {
 test('result layout cache version is refreshed together', () => {
   assert.match(loader, /result-layout\.js\?v=20261015-11/);
   assert.match(loader, /syncActionWidth/);
-  assert.match(app, /result-loader\.js\?d/);
+  assert.match(app, /result-loader\.js\?e/);
 });
