@@ -4,6 +4,7 @@ import {handleCentralSso} from './central-sso.js';
 import {handleDownloadHistoryRequest, recordDownloadStart} from './history.js';
 import {handlePushRequest, notifyReportCreated, saveReportPushState} from './push.js';
 import {enforceMemberReport, handleReportRepairRequest} from './report-repair.js';
+import {authenticatedDownloadStarryMember, handleFavoritesRequest} from './favorites.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -32,6 +33,25 @@ async function fetchHandler(request, env, ctx) {
   }
 
   const url = new URL(request.url);
+
+  if (url.pathname === '/api/favorites') {
+    try {
+      return await handleFavoritesRequest(request, env);
+    } catch {
+      return Response.json({error: '收藏服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    }
+  }
+
+  if (url.pathname.startsWith('/api/advanced/')) {
+    try {
+      const member = await authenticatedDownloadStarryMember(request, env);
+      if (!member?.id) {
+        return Response.json({error: '進階功能為會員限定，請先登入 Starry ID'}, {status: 401, headers: {'Cache-Control': 'no-store'}});
+      }
+    } catch {
+      return Response.json({error: '會員驗證暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    }
+  }
 
   if (url.pathname.startsWith('/api/download-history')) {
     try {
