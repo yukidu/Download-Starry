@@ -32,7 +32,7 @@
     .then(() => loadScript('/static/resource-actions.js?v=20261015-10'))
     .then(() => loadScript('/static/result-polish.js?v=20261015-10'))
     .then(() => loadScript('/static/result-layout.js?v=20261015-10'))
-    .then(() => loadScript('/static/share-one-tap.js?v=20261015-1'))
+    .then(() => loadScript('/static/share-one-tap.js?v=20261015-2'))
     .then(() => {
       removeLegacyVisualLayers();
       window.DownloadStarryResultLayout?.syncActionWidth?.();
