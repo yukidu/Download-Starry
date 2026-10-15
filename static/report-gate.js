@@ -8,6 +8,11 @@
   let sessionPromise;
   let memberApiPromise;
 
+  const adminVisibilityStyle = document.createElement('style');
+  adminVisibilityStyle.id = 'downloadstarry-super-admin-visibility';
+  adminVisibilityStyle.textContent = 'body:not(.downloadstarry-super-admin) .dsr-admin{display:none!important}';
+  document.head.appendChild(adminVisibilityStyle);
+
   function installTopReportButton() {
     const lookupButton = document.getElementById('lookup-button');
     const clearButton = document.getElementById('clear-url-button');
@@ -194,9 +199,12 @@
 
     const user = await sessionUser();
     const allowed = isSuperAdmin(user);
+    document.body.classList.toggle('downloadstarry-super-admin', allowed);
     if (menuReport && allowed) {
       menuReport.hidden = false;
       menuReport.removeAttribute('aria-hidden');
+      const label = menuReport.querySelector('span:last-child');
+      if (label) label.textContent = '回報錯誤管理';
     }
     if (location.pathname === '/report') {
       if (!allowed) {
