@@ -119,7 +119,7 @@ test('second parse cannot restore the old all-black legacy button layer', () => 
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?d/);
+  assert.match(app, /result-loader\.js\?e/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
   assert.match(resultLoader, /result-ui\.css\?v=20261015-11/);
@@ -128,6 +128,7 @@ test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(resultLoader, /result-layout\.js\?v=20261015-11/);
   assert.match(resultLoader, /share-one-tap\.js\?v=20261015-4/);
   assert.match(resultLoader, /advanced-member\.js\?v=20261015-1/);
+  assert.match(resultLoader, /advanced-preview-guard\.js\?v=20261015-1/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
