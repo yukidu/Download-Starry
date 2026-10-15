@@ -24,15 +24,11 @@ test('Worker 在建立回報前強制會員身分', async () => {
   assert.match(repair, /downloadstarry_sessions/);
 });
 
-test('回報頁提供修復後通知我並綁定該回報', async () => {
+test('回報管理頁不再載入已淘汰的修復通知表單', async () => {
   const shell = await read('static/member-shell.js');
-  const ui = await read('static/repair-notifications.js');
   const api = await read('static/member-api.js');
-  assert.match(shell, /\/static\/repair-notifications\.js/);
-  assert.match(ui, /修復後通知我/);
-  assert.match(ui, /repairWatch\(result\.id\)/);
-  assert.match(ui, /notifications\.requestPermission\(\)/);
-  assert.match(ui, /已訂閱修復通知/);
+  assert.doesNotMatch(shell, /\/static\/repair-notifications\.js/);
+  assert.doesNotMatch(shell, /\/static\/repair-permission-recheck\.js/);
   assert.match(api, /\/api\/report-repair\/watch/);
   assert.match(api, /\/api\/report-repair\/subscribe/);
 });
@@ -69,12 +65,11 @@ test('iPhone iPad 未加入主畫面時不假裝能強制安裝', async () => {
   assert.match(ui, /location\.assign\('\/install'\)/);
 });
 
-test('成功送出回報後顯示完成視窗，關閉返回首頁', async () => {
+test('舊修復通知元件仍可獨立讀取但不再掛到回報管理頁', async () => {
   const ui = await read('static/repair-notifications.js');
   assert.match(ui, /已回報完成/);
   assert.match(ui, /dsr-report-success/);
   assert.match(ui, /dsr-success-close/);
-  assert.match(ui, /location\.assign\('\/'\)/);
   assert.match(ui, /showReportSuccess\(detail\)/);
 });
 

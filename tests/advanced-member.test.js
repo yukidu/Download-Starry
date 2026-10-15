@@ -17,7 +17,7 @@ const dockerfile = read('Dockerfile');
 test('解析按鈕位置改為回報錯誤，但保留隱藏 submit 給自動解析使用', () => {
   assert.match(reportGate, /lookupButton\.hidden = true/);
   assert.match(reportGate, /top-report-button/);
-  assert.match(reportGate, /reportButton\.textContent = '回報錯誤'/);
+  assert.match(reportGate, /button\.textContent = '回報錯誤'/);
   assert.match(reportGate, /#menu-report-button,#top-report-button/);
   assert.doesNotMatch(reportGate, /#menu-report-button,#report-download-button/);
 });

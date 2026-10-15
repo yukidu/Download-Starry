@@ -6,6 +6,7 @@ import {handlePushRequest, notifyReportCreated, saveReportPushState} from './pus
 import {enforceMemberReport, handleReportRepairRequest} from './report-repair.js';
 import {authenticatedDownloadStarryMember, handleFavoritesRequest} from './favorites.js';
 import {isSuperAdminRequest} from './super-admin.js';
+import {handleAdminReportList} from './admin-reports.js';
 
 export class VideoDownloader extends Container {
   defaultPort = 8080;
@@ -48,6 +49,14 @@ async function fetchHandler(request, env, ctx) {
         status: 403,
         headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'},
       });
+    }
+  }
+
+  if (url.pathname === '/api/reports' && method === 'GET') {
+    try {
+      return await handleAdminReportList(request, env);
+    } catch {
+      return Response.json({error: '回報管理服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
     }
   }
 
