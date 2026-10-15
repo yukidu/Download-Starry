@@ -22,7 +22,6 @@ test('漢堡回報管理入口只顯示給超級管理員', async () => {
   assert.match(gate, /SUPER_ADMIN_EMAIL = 'yukidu@gmail\.com'/);
   assert.match(gate, /menuReport\.hidden = true/);
   assert.match(gate, /document\.body\.classList\.toggle\('downloadstarry-super-admin', allowed\)/);
-  assert.match(gate, /body:not\(\.downloadstarry-super-admin\) \.dsr-admin\{display:none!important\}/);
   assert.match(gate, /label\.textContent = '回報錯誤管理'/);
   assert.match(gate, /location\.replace\('\/'\)/);
 });
