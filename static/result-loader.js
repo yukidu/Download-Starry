@@ -42,6 +42,7 @@
     .then(() => loadScript('/static/result-layout.js?v=20261015-11'))
     .then(() => loadScript('/static/share-one-tap.js?v=20261015-4'))
     .then(() => loadScript('/static/advanced-member.js?v=20261015-1'))
+    .then(() => loadScript('/static/advanced-preview-guard.js?v=20261015-1'))
     .then(() => {
       removeLegacyVisualLayers();
       window.DownloadStarryAdvancedMember?.ensurePlacement?.();
