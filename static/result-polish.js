@@ -11,6 +11,7 @@
   const iosShareIcon = '<svg class="resource-share-icon resource-share-icon-ios" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const androidShareIcon = '<svg class="resource-share-icon resource-share-icon-android" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.7 10.7 6.6-4.1M8.7 13.3l6.6 4.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const genericShareIcon = '<svg class="resource-share-icon resource-share-icon-generic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const downloadIcon = '<svg class="resource-download-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:34px;height:34px;flex:0 0 34px;stroke:currentColor"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const deviceName = () => platform?.runtime?.isIOS ? 'ios' : platform?.runtime?.isAndroid ? 'android' : 'web';
   const expectedIconClass = () => platform?.runtime?.isIOS ? 'resource-share-icon-ios' : platform?.runtime?.isAndroid ? 'resource-share-icon-android' : 'resource-share-icon-generic';
@@ -39,6 +40,19 @@
     button.innerHTML = `${shareIconMarkup()}${label}`;
     button.setAttribute('aria-label', label);
     button.dataset.shareDevice = deviceName();
+  };
+
+  const renderDownloadButton = (button, label) => {
+    if (!button) return;
+    button.classList.add('resource-download-button');
+    button.innerHTML = `${downloadIcon}${label}`;
+    button.setAttribute('aria-label', label);
+    button.style.setProperty('display', 'flex', 'important');
+    button.style.setProperty('flex-direction', 'column', 'important');
+    button.style.setProperty('align-items', 'center', 'important');
+    button.style.setProperty('justify-content', 'center', 'important');
+    button.style.setProperty('gap', '2px', 'important');
+    button.style.setProperty('text-align', 'center', 'important');
   };
 
   const installCss = () => {
@@ -305,13 +319,15 @@
     const reportButton = document.getElementById('report-download-button');
     if (!result || !grid || !videoButton || !audioButton || !shareVideo || !shareAudio) return false;
 
+    renderDownloadButton(videoButton, '下載');
+    renderDownloadButton(audioButton, '下載');
     const videoGroup = ensureActionGroup(grid, 'resource-action-group-video', '影片', videoButton, shareVideo);
     const audioGroup = ensureActionGroup(grid, 'resource-action-group-audio', '音檔', audioButton, shareAudio);
     grid.replaceChildren(videoGroup, audioGroup);
     if (reportButton) grid.append(reportButton);
 
-    renderShareButton(shareVideo, '分享影片');
-    renderShareButton(shareAudio, '分享音檔');
+    renderShareButton(shareVideo, '分享');
+    renderShareButton(shareAudio, '分享');
     watchShareIcon(shareVideo);
     watchShareIcon(shareAudio);
     installCss();
