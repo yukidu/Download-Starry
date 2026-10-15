@@ -5,6 +5,8 @@ import fs from 'node:fs';
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const advanced = read('static/advanced-member.js');
 const advancedCss = read('static/advanced-member.css');
+const previewGuard = read('static/advanced-preview-guard.js');
+const advancedBackend = read('deployment/advanced.py');
 const reportGate = read('static/report-gate.js');
 const loader = read('static/result-loader.js');
 const worker = read('cloudflare/worker.js');
@@ -56,6 +58,25 @@ test('自訂裁切提供雙端時間軸、即時預覽、下載與分享', () =>
   assert.match(advanced, /advanced-trim-download/);
   assert.match(advanced, /advanced-trim-share/);
   assert.match(advancedCss, /advanced-timeline/);
+});
+
+test('裁切預覽不論使用預覽按鈕或播放器控制列都會在設定終點停止', () => {
+  assert.match(loader, /advanced-preview-guard\.js\?v=20261015-1/);
+  assert.match(previewGuard, /video\.addEventListener\('play'/);
+  assert.match(previewGuard, /video\.addEventListener\('timeupdate', stopAtEnd\)/);
+  assert.match(previewGuard, /requestVideoFrameCallback/);
+  assert.match(previewGuard, /video\.currentTime = end/);
+  assert.match(previewGuard, /video\.currentTime = start/);
+});
+
+test('裁切處理會持續回報 FFmpeg 真實進度而不是固定卡在 78%', () => {
+  assert.match(advancedBackend, /selectors\.DefaultSelector/);
+  assert.match(advancedBackend, /subprocess\.Popen/);
+  assert.match(advancedBackend, /"-progress", "pipe:1"/);
+  assert.match(advancedBackend, /out_time_us/);
+  assert.match(advancedBackend, /78\.0 \+ ratio \* 20\.0/);
+  assert.match(advancedBackend, /_run_trim_ffmpeg\(job_id, command, duration\)/);
+  assert.doesNotMatch(advancedBackend, /subprocess\.run\(command, check=True, timeout=420\)/);
 });
 
 test('進階處理在 Worker 層強制要求會員登入', () => {
