@@ -11,19 +11,19 @@ test('parsed video and audio action groups always use two equal full-width colum
   assert.match(layout, /minmax\(0,1fr\) minmax\(0,1fr\)/);
   assert.match(layout, /videoGroup\.style\.setProperty\('grid-column', '1', 'important'\)/);
   assert.match(layout, /audioGroup\.style\.setProperty\('grid-column', '2', 'important'\)/);
-  assert.match(layout, /reportButton\.style\.setProperty\('grid-column', '1 \/ -1', 'important'\)/);
+  assert.match(layout, /advancedToggle\.style\.setProperty\('grid-column', '1 \/ -1', 'important'\)/);
   assert.doesNotMatch(layout, /getBoundingClientRect/);
   assert.doesNotMatch(layout, /viewportRight/);
 });
 
-test('download progress sits directly above the report button', () => {
-  assert.match(layout, /grid\.insertBefore\(progressPanel, reportButton\)/);
+test('download progress sits directly above the member advanced toggle', () => {
+  assert.match(layout, /grid\.insertBefore\(progressPanel, advancedToggle\)/);
   assert.match(layout, /result-download-progress/);
   assert.match(layout, /restoreProgressPanel/);
 });
 
 test('result layout cache version is refreshed together', () => {
-  assert.match(loader, /result-layout\.js\?v=20261015-10/);
+  assert.match(loader, /result-layout\.js\?v=20261015-11/);
   assert.match(loader, /syncActionWidth/);
-  assert.match(app, /result-loader\.js\?c/);
+  assert.match(app, /result-loader\.js\?d/);
 });
