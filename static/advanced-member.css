@@ -1,0 +1,77 @@
+#video-download-actions .advanced-member-toggle{
+  grid-column:1/-1!important;
+  width:min(82%,480px)!important;
+  min-height:46px!important;
+  justify-self:center!important;
+  margin:2px auto 0!important;
+  padding:10px 16px!important;
+  border:1px solid rgba(103,91,190,.24)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(245,241,255,.96),rgba(226,237,255,.94))!important;
+  color:#4e4a78!important;
+  box-shadow:0 8px 20px rgba(60,54,122,.09)!important;
+  font:900 15px/1.2 "Noto Sans TC",sans-serif!important;
+  letter-spacing:.02em!important;
+}
+#video-download-actions .advanced-member-toggle[aria-expanded="true"]{
+  background:linear-gradient(145deg,rgba(233,225,255,.98),rgba(214,238,255,.96))!important;
+  color:#493f93!important;
+}
+#video-download-actions .advanced-member-panel{
+  grid-column:1/-1!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:12px!important;
+  border:1px solid rgba(112,105,174,.18)!important;
+  border-radius:18px!important;
+  background:color-mix(in srgb,var(--card) 94%,transparent)!important;
+  box-shadow:0 10px 24px rgba(42,48,92,.08)!important;
+}
+#video-download-actions .advanced-member-panel[hidden]{display:none!important}
+.advanced-member-stack{display:grid;gap:11px}
+.advanced-member-row{display:flex;gap:9px;align-items:center;justify-content:space-between;min-width:0}
+.advanced-member-title{margin:0;font:900 16px/1.3 "Noto Sans TC",sans-serif;color:var(--ink)}
+.advanced-member-note{margin:3px 0 0;font:600 12px/1.5 "Noto Sans TC",sans-serif;color:var(--muted)}
+.advanced-feature-button{
+  width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:13px;
+  background:var(--soft-bg);color:var(--ink);font:800 14px/1.3 "Noto Sans TC",sans-serif;cursor:pointer
+}
+.advanced-feature-button.is-active{border-color:rgba(126,90,220,.35);background:rgba(126,90,220,.10);color:#6840b5}
+.advanced-feature-button:disabled{opacity:.55;cursor:not-allowed}
+.advanced-section{display:grid;gap:9px;padding:10px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--soft-bg) 72%,transparent)}
+.advanced-section[hidden]{display:none!important}
+#advanced-cc-slot #subtitle-download-actions{display:grid!important;width:100%!important;margin:0!important;padding:0!important;gap:8px!important}
+#advanced-cc-slot #subtitle-download-actions[hidden]{display:none!important}
+#advanced-cc-slot #subtitle-group{display:grid!important;gap:6px!important;width:100%!important;margin:0!important;color:var(--ink)!important;font:800 13px/1.3 "Noto Sans TC",sans-serif!important}
+#advanced-cc-slot #subtitle-language{width:100%!important;min-height:42px!important;border-radius:11px!important}
+#advanced-cc-slot #download-subtitle-button{width:100%!important;min-height:44px!important;border-radius:12px!important}
+.advanced-preview-shell{display:grid;gap:9px}
+#advanced-preview-video{display:block;width:100%;max-height:300px;border-radius:13px;background:#05070f;object-fit:contain}
+.advanced-preview-status{min-height:20px;color:var(--muted);font:700 12px/1.45 "Noto Sans TC",sans-serif}
+.advanced-timeline{position:relative;height:42px;margin:1px 3px 0}
+.advanced-timeline-track{position:absolute;left:0;right:0;top:18px;height:7px;border-radius:999px;background:linear-gradient(90deg,#7651dd,#2fa2c6);opacity:.35}
+.advanced-timeline input[type="range"]{position:absolute;inset:0;width:100%;height:42px;margin:0;background:transparent;pointer-events:none;-webkit-appearance:none;appearance:none}
+.advanced-timeline input[type="range"]::-webkit-slider-runnable-track{height:7px;background:transparent}
+.advanced-timeline input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:23px;height:23px;margin-top:-8px;border:3px solid #fff;border-radius:50%;background:#6848cf;box-shadow:0 3px 10px rgba(34,31,75,.28);pointer-events:auto}
+.advanced-timeline input[type="range"]::-moz-range-track{height:7px;background:transparent}
+.advanced-timeline input[type="range"]::-moz-range-thumb{width:19px;height:19px;border:3px solid #fff;border-radius:50%;background:#6848cf;box-shadow:0 3px 10px rgba(34,31,75,.28);pointer-events:auto}
+.advanced-time-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center}
+.advanced-time-chip{padding:7px 4px;border-radius:10px;background:var(--soft-bg);color:var(--ink);font:800 12px/1.25 "DM Sans","Noto Sans TC",sans-serif}
+.advanced-trim-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.advanced-trim-actions button{min-height:42px;padding:8px 5px;border:0;border-radius:12px;font:800 12px/1.25 "Noto Sans TC",sans-serif;cursor:pointer}
+#advanced-preview-play{background:var(--soft-bg);color:var(--ink);border:1px solid var(--line)}
+#advanced-trim-download{background:linear-gradient(145deg,#7447d7,#5d43c7);color:#fff}
+#advanced-trim-share{background:linear-gradient(145deg,#2f8bd6,#2f9fb5);color:#fff}
+.advanced-gate{position:fixed;inset:0;z-index:11000;display:grid;place-items:center;padding:20px;background:rgba(5,8,24,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.advanced-gate[hidden]{display:none!important}
+.advanced-gate-card{width:min(100%,360px);padding:23px;border:1px solid var(--line);border-radius:22px;background:var(--panel-bg);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.30);text-align:center}
+.advanced-gate-card h2{margin:0 0 8px;font:900 20px/1.35 "Noto Sans TC",sans-serif}
+.advanced-gate-card p{margin:0;color:var(--muted);font:600 13px/1.65 "Noto Sans TC",sans-serif}
+.advanced-gate-actions{display:grid;gap:8px;margin-top:16px}.advanced-gate-actions button{min-height:44px;border:0;border-radius:12px;font:800 14px/1.3 "Noto Sans TC",sans-serif}.advanced-gate-login{background:var(--accent);color:#fff}.advanced-gate-close{background:var(--soft-bg);color:var(--ink);border:1px solid var(--line)!important}
+@media(max-width:650px){
+  #video-download-actions .advanced-member-toggle{width:min(90%,430px)!important;min-height:44px!important;font-size:14px!important}
+  #video-download-actions .advanced-member-panel{padding:10px!important;border-radius:16px!important}
+  .advanced-trim-actions{grid-template-columns:1fr 1fr}.advanced-trim-actions #advanced-preview-play{grid-column:1/-1}
+  #advanced-preview-video{max-height:240px}
+}
