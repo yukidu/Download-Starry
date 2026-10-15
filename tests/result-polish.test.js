@@ -36,14 +36,15 @@ test('video and audio sections are visually separated with larger centered contr
   assert.match(resultUi, /justify-content:stretch!important/);
 });
 
-test('action row fully stretches both groups and aligns the last audio button with clear', () => {
+test('action row uses fixed equal columns without measuring the clear button', () => {
   assert.match(resultUi, /resource-action-group[\s\S]*max-width:none!important[\s\S]*justify-self:stretch!important/);
-  assert.match(resultLayout, /clear-url-button/);
-  assert.match(resultLayout, /share-audio-button/);
-  assert.match(resultLayout, /getBoundingClientRect\(\)/);
-  assert.match(resultLayout, /rightInset = Math\.max\(0, audioRect\.right - lastRect\.right\)/);
-  assert.match(resultLayout, /targetRight - actionRect\.left \+ rightInset/);
-  assert.match(resultLayout, /grid\.style\.width = '100%'/);
+  assert.match(resultLayout, /grid-template-columns/);
+  assert.match(resultLayout, /minmax\(0,1fr\) minmax\(0,1fr\)/);
+  assert.match(resultLayout, /videoGroup\.style\.setProperty\('grid-column', '1', 'important'\)/);
+  assert.match(resultLayout, /audioGroup\.style\.setProperty\('grid-column', '2', 'important'\)/);
+  assert.match(resultLayout, /reportButton\.style\.setProperty\('grid-column', '1 \/ -1', 'important'\)/);
+  assert.doesNotMatch(resultLayout, /clear-url-button/);
+  assert.doesNotMatch(resultLayout, /getBoundingClientRect/);
 });
 
 test('report button uses a pale non-black treatment', () => {
@@ -88,13 +89,13 @@ test('URL field becomes a smaller auto-growing three-line textarea before handle
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?7/);
+  assert.match(app, /result-loader\.js\?8/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
-  assert.match(resultLoader, /result-ui\.css\?v=20261015-7/);
-  assert.match(resultLoader, /resource-actions\.js\?v=20261015-7/);
-  assert.match(resultLoader, /result-polish\.js\?v=20261015-7/);
-  assert.match(resultLoader, /result-layout\.js\?v=20261015-7/);
+  assert.match(resultLoader, /result-ui\.css\?v=20261015-8/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-8/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-8/);
+  assert.match(resultLoader, /result-layout\.js\?v=20261015-8/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
