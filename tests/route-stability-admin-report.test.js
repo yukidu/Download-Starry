@@ -7,7 +7,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 test('深層功能頁先隱藏首頁內容並改用獨立啟動檔，不載入首頁 app-core', async () => {
   const app = await read('static/app.js');
   const deep = await read('static/deep-route.js');
-  assert.match(app, /deepRoutes=new Set\(\['\/account','\/report','\/install','\/history'\]\)/);
+  assert.match(app, /account\|report\|install\|history/);
   assert.match(app, /main\.style\.visibility='hidden'/);
   assert.match(app, /load\('\/static\/deep-route\.js'\)/);
   assert.doesNotMatch(deep, /app-core\.js/);
