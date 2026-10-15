@@ -23,7 +23,8 @@
     const grid = actions?.querySelector('.download-action-grid');
     const videoGroup = actions?.querySelector('.resource-action-group-video');
     const audioGroup = actions?.querySelector('.resource-action-group-audio');
-    const reportButton = document.getElementById('report-download-button');
+    const advancedToggle = document.getElementById('report-download-button');
+    const advancedPanel = document.getElementById('advanced-member-panel');
     if (!actions || !grid || !videoGroup || !audioGroup) return;
 
     actions.style.setProperty('width', '100%', 'important');
@@ -41,8 +42,8 @@
     videoGroup.style.setProperty('max-width', 'none', 'important');
     audioGroup.style.setProperty('max-width', 'none', 'important');
 
-    if (!actions.hidden && progressPanel && reportButton) {
-      grid.insertBefore(progressPanel, reportButton);
+    if (!actions.hidden && progressPanel && advancedToggle) {
+      grid.insertBefore(progressPanel, advancedToggle);
       progressPanel.classList.remove('top-download-progress');
       progressPanel.classList.add('result-download-progress');
       progressPanel.style.setProperty('grid-column', '1 / -1', 'important');
@@ -53,13 +54,19 @@
       restoreProgressPanel();
     }
 
-    if (reportButton) {
-      reportButton.style.setProperty('grid-column', '1 / -1', 'important');
-      reportButton.style.setProperty('width', 'min(72%, 420px)', 'important');
-      reportButton.style.setProperty('min-height', '42px', 'important');
-      reportButton.style.setProperty('padding', '8px 14px', 'important');
-      reportButton.style.setProperty('margin-top', '0', 'important');
-      reportButton.style.setProperty('justify-self', 'center', 'important');
+    if (advancedToggle) {
+      advancedToggle.style.setProperty('grid-column', '1 / -1', 'important');
+      advancedToggle.style.setProperty('width', 'min(82%, 480px)', 'important');
+      advancedToggle.style.setProperty('min-height', '46px', 'important');
+      advancedToggle.style.setProperty('padding', '10px 16px', 'important');
+      advancedToggle.style.setProperty('margin-top', '0', 'important');
+      advancedToggle.style.setProperty('justify-self', 'center', 'important');
+    }
+
+    if (advancedPanel) {
+      advancedPanel.style.setProperty('grid-column', '1 / -1', 'important');
+      advancedPanel.style.setProperty('width', '100%', 'important');
+      advancedPanel.style.setProperty('justify-self', 'stretch', 'important');
     }
   };
 

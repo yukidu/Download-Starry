@@ -8,7 +8,7 @@ test('回報按鈕先檢查 Starry ID，訪客顯示免費註冊提醒', async (
   const app = await read('static/app.js');
   const gate = await read('static/report-gate.js');
   assert.match(app, /\/static\/report-gate\.js/);
-  assert.match(gate, /#menu-report-button,#report-download-button/);
+  assert.match(gate, /#menu-report-button,#top-report-button/);
   assert.match(gate, /\/api\/auth\/starry\/session/);
   assert.match(gate, /只提供給註冊會員使用/);
   assert.match(gate, /按此免費註冊/);

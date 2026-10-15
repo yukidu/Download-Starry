@@ -5,6 +5,26 @@
   const endpoint = path => window.SaveVideoAPI?.endpoint?.(path) || path;
   let modal;
 
+  function installTopReportButton() {
+    const lookupButton = document.getElementById('lookup-button');
+    const clearButton = document.getElementById('clear-url-button');
+    if (!lookupButton || !clearButton?.parentElement) return null;
+    lookupButton.hidden = true;
+    lookupButton.setAttribute('aria-hidden', 'true');
+    lookupButton.tabIndex = -1;
+    let reportButton = document.getElementById('top-report-button');
+    if (!reportButton) {
+      reportButton = document.createElement('button');
+      reportButton.id = 'top-report-button';
+      reportButton.type = 'button';
+      reportButton.className = 'top-report-button';
+      reportButton.textContent = '回報錯誤';
+      reportButton.setAttribute('aria-label', '回報錯誤');
+      clearButton.insertAdjacentElement('afterend', reportButton);
+    }
+    return reportButton;
+  }
+
   async function isMember() {
     try {
       const response = await fetch(endpoint('/api/auth/starry/session'), {cache: 'no-store'});
@@ -53,16 +73,25 @@
     box.querySelector('#drg-register')?.focus();
   }
 
+  function currentResourceUrl() {
+    return String(
+      document.getElementById('download-url')?.value ||
+      document.getElementById('url')?.value ||
+      ''
+    ).trim();
+  }
+
   async function openReport(parsed) {
     if (!await isMember()) {
       openModal();
       return;
     }
-    if (parsed) {
+    const resourceUrl = currentResourceUrl();
+    if (parsed && resourceUrl) {
       try {
         sessionStorage.setItem('downloadstarry.report-draft.v2', JSON.stringify({
           source: 'parsed',
-          url: document.getElementById('url')?.value || '',
+          url: resourceUrl,
           reportedAt: new Date().toISOString(),
         }));
       } catch (_) {}
@@ -73,12 +102,13 @@
   }
 
   document.addEventListener('click', event => {
-    const target = event.target.closest?.('#menu-report-button,#report-download-button');
+    const target = event.target.closest?.('#menu-report-button,#top-report-button');
     if (!target) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    openReport(target.id === 'report-download-button');
+    openReport(target.id === 'top-report-button');
   }, true);
 
-  window.DownloadStarryReportGate = Object.freeze({openModal});
+  const topReportButton = installTopReportButton();
+  window.DownloadStarryReportGate = Object.freeze({openModal, openReport, topReportButton});
 })();
