@@ -8,6 +8,7 @@ const resultLayout = fs.readFileSync(new URL('../static/result-layout.js', impor
 const urlFieldWrap = fs.readFileSync(new URL('../static/url-field-wrap.js', import.meta.url), 'utf8');
 const resultLoader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
+const advancedCss = fs.readFileSync(new URL('../static/advanced-member.css', import.meta.url), 'utf8');
 
 test('four primary actions stay on one row as two full-width groups', () => {
   assert.match(polish, /resource-action-group-video/);
@@ -61,11 +62,10 @@ test('action row uses fixed equal columns without measuring the clear button', (
   assert.doesNotMatch(resultLayout, /getBoundingClientRect/);
 });
 
-test('report button is centered, narrower and shorter', () => {
-  assert.match(resultUi, /report-download-button[\s\S]*background:linear-gradient/);
-  assert.match(resultUi, /color:#53637c!important/);
-  assert.match(resultLayout, /width', 'min\(72%, 420px\)'/);
-  assert.match(resultLayout, /min-height', '42px'/);
+test('member advanced toggle is centered and compact in the old report area', () => {
+  assert.match(advancedCss, /advanced-member-toggle/);
+  assert.match(resultLayout, /width', 'min\(82%, 480px\)'/);
+  assert.match(resultLayout, /min-height', '46px'/);
   assert.match(resultLayout, /justify-self', 'center'/);
 });
 
@@ -119,14 +119,15 @@ test('second parse cannot restore the old all-black legacy button layer', () => 
 
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?c/);
+  assert.match(app, /result-loader\.js\?d/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
-  assert.match(resultLoader, /result-ui\.css\?v=20261015-10/);
-  assert.match(resultLoader, /resource-actions\.js\?v=20261015-10/);
-  assert.match(resultLoader, /result-polish\.js\?v=20261015-10/);
-  assert.match(resultLoader, /result-layout\.js\?v=20261015-10/);
-  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-3/);
+  assert.match(resultLoader, /result-ui\.css\?v=20261015-11/);
+  assert.match(resultLoader, /resource-actions\.js\?v=20261015-11/);
+  assert.match(resultLoader, /result-polish\.js\?v=20261015-11/);
+  assert.match(resultLoader, /result-layout\.js\?v=20261015-11/);
+  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-4/);
+  assert.match(resultLoader, /advanced-member\.js\?v=20261015-1/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);
