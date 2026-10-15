@@ -34,10 +34,11 @@ export function allowedRoute(path, method) {
   if (['GET', 'HEAD'].includes(method)) {
     return PAGE_ROUTES.has(path) || path === '/api/health' ||
       /^\/static\/[A-Za-z0-9._-]+$/.test(path) ||
-      /^\/api\/download\/[a-f0-9]{32}\/(progress|file)$/.test(path);
+      /^\/api\/download\/[a-f0-9]{32}\/(progress|file)$/.test(path) ||
+      /^\/api\/advanced\/file\/[a-f0-9]{32}$/.test(path);
   }
   return method === 'POST' && (
-    path === '/api/info' || path === '/api/download' ||
+    path === '/api/info' || path === '/api/download' || path === '/api/advanced/download' ||
     /^\/api\/download\/[a-f0-9]{32}\/cancel$/.test(path)
   );
 }
