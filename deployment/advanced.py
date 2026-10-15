@@ -16,6 +16,7 @@ from yt_dlp.utils import DownloadCancelled, DownloadError
 from app import (
     MAX_ACTIVE_JOBS,
     MAX_DOWNLOAD_BYTES,
+    ORIGINAL_VIDEO_PLATFORMS,
     app,
     cleanup_stale_jobs,
     download_executor,
@@ -105,6 +106,8 @@ def _advanced_worker(
             "format": "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]/best[height<=360]/worst",
             "merge_output_format": "mp4",
         })
+    elif platform in ORIGINAL_VIDEO_PLATFORMS or quality == "original":
+        options["format"] = "best"
     elif quality == "best":
         options.update({
             "format": "bestvideo+bestaudio/best",
