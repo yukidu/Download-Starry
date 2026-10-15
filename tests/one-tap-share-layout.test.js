@@ -21,25 +21,24 @@ test('pasted URL compacts provider logos into exactly two rows', () => {
   assert.match(providerCss, /width:36px!important/);
 });
 
-test('share files are prepared after parsing before the user taps share', () => {
-  assert.match(share, /const prepareAll = async \(\) =>/);
-  assert.match(share, /videoReady = await prepareType\('video', token\)/);
-  assert.match(share, /audioReady = await prepareType\('audio', token\)/);
-  assert.match(share, /button\.disabled = !ready/);
-  assert.match(share, /button\.dataset\.shareReady = ready \? '1' : '0'/);
-  assert.match(share, /queueMicrotask\(\(\) => \{ if \(!result\.hidden\) void prepareAll\(\); \}\)/);
-});
-
-test('one tap calls native file share immediately from the click handler path', () => {
-  assert.match(share, /const sharePrepared = type =>/);
-  assert.match(share, /shareResult = share\.file\(cached\.file, sharePayload\(type\)\)/);
+test('parsing a URL never starts video or audio preparation automatically', () => {
+  assert.match(share, /const prepareShare = async type =>/);
   assert.match(share, /shareVideo\.addEventListener\('click', \(\) => sharePrepared\('video'\)\)/);
   assert.match(share, /shareAudio\.addEventListener\('click', \(\) => sharePrepared\('audio'\)\)/);
-  assert.doesNotMatch(share, /await share\.file/);
-  assert.doesNotMatch(share, /點此分享|pendingShare|禁止在檔案準備完成後自動叫出分享選單/);
+  assert.doesNotMatch(share, /prepareAll/);
+  assert.doesNotMatch(share, /queueMicrotask[\s\S]*prepare/);
+  assert.doesNotMatch(share, /else void prepare/);
 });
 
-test('new share flow has fresh cache versions', () => {
-  assert.match(loader, /share-one-tap\.js\?v=20261015-2/);
-  assert.match(app, /result-loader\.js\?b/);
+test('first share tap prepares only the selected format and second tap opens native share', () => {
+  assert.match(share, /void prepareShare\(type\)/);
+  assert.match(share, /api\.startDownload\(\{[\s\S]*type,[\s\S]*quality:/);
+  assert.match(share, /setShareLabel\(type, '點此分享'\)/);
+  assert.match(share, /shareResult = share\.file\(cached\.file, sharePayload\(type\)\)/);
+  assert.match(share, /button\.dataset\.shareReady = '1'/);
+});
+
+test('new manual share flow has fresh cache versions', () => {
+  assert.match(loader, /share-one-tap\.js\?v=20261015-3/);
+  assert.match(app, /result-loader\.js\?c/);
 });

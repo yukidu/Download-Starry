@@ -25,5 +25,5 @@ test('download progress sits directly above the report button', () => {
 test('result layout cache version is refreshed together', () => {
   assert.match(loader, /result-layout\.js\?v=20261015-10/);
   assert.match(loader, /syncActionWidth/);
-  assert.match(app, /result-loader\.js\?b/);
+  assert.match(app, /result-loader\.js\?c/);
 });

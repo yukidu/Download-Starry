@@ -109,16 +109,24 @@ test('URL field remains a smaller auto-growing three-line textarea before handle
   assert.match(urlFieldWrap, /@media\(max-width:700px\)[\s\S]*font-size:15px/);
 });
 
+test('second parse cannot restore the old all-black legacy button layer', () => {
+  assert.match(resultLoader, /const polishStyle = document\.getElementById\('downloadstarry-result-polish-style'\)/);
+  assert.match(resultLoader, /polishStyle\.textContent = ''/);
+  assert.match(resultLoader, /polishStyle\.dataset\.neutralized = '1'/);
+  assert.match(resultUi, /resource-action-group-video \.download-action-button[\s\S]*#7447d7/);
+  assert.match(resultUi, /resource-action-group-audio \.download-action-button[\s\S]*#2f8bd6/);
+});
+
 test('result UI stays hidden until one final visual layer is ready', () => {
   assert.match(app, /r\.style\.opacity=0/);
-  assert.match(app, /result-loader\.js\?b/);
+  assert.match(app, /result-loader\.js\?c/);
   assert.match(app, /DownloadStarryResultReady/);
   assert.match(app, /r\.style\.opacity=1/);
   assert.match(resultLoader, /result-ui\.css\?v=20261015-10/);
   assert.match(resultLoader, /resource-actions\.js\?v=20261015-10/);
   assert.match(resultLoader, /result-polish\.js\?v=20261015-10/);
   assert.match(resultLoader, /result-layout\.js\?v=20261015-10/);
-  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-2/);
+  assert.match(resultLoader, /share-one-tap\.js\?v=20261015-3/);
   assert.doesNotMatch(resultLoader, /result-visual-tune\.js/);
   assert.match(resultLoader, /downloadstarry-resource-actions-style/);
   assert.match(resultLoader, /downloadstarry-result-polish-style/);

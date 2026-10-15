@@ -23,16 +23,21 @@
   const removeLegacyVisualLayers = () => {
     [
       'downloadstarry-resource-actions-style',
-      'downloadstarry-result-polish-style',
       'downloadstarry-result-visual-tune-style',
     ].forEach(id => document.getElementById(id)?.remove());
+
+    const polishStyle = document.getElementById('downloadstarry-result-polish-style');
+    if (polishStyle) {
+      polishStyle.textContent = '';
+      polishStyle.dataset.neutralized = '1';
+    }
   };
 
   window.DownloadStarryResultReady = loadStyle('/static/result-ui.css?v=20261015-10')
     .then(() => loadScript('/static/resource-actions.js?v=20261015-10'))
     .then(() => loadScript('/static/result-polish.js?v=20261015-10'))
     .then(() => loadScript('/static/result-layout.js?v=20261015-10'))
-    .then(() => loadScript('/static/share-one-tap.js?v=20261015-2'))
+    .then(() => loadScript('/static/share-one-tap.js?v=20261015-3'))
     .then(() => {
       removeLegacyVisualLayers();
       window.DownloadStarryResultLayout?.syncActionWidth?.();
