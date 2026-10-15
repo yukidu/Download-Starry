@@ -8,8 +8,8 @@ const providerCss = fs.readFileSync(new URL('../static/provider-ui.css', import.
 const loader = fs.readFileSync(new URL('../static/result-loader.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
-test('download progress is moved immediately above the report button', () => {
-  assert.match(layout, /grid\.insertBefore\(progressPanel, reportButton\)/);
+test('download progress is moved immediately above the member advanced toggle', () => {
+  assert.match(layout, /grid\.insertBefore\(progressPanel, advancedToggle\)/);
   assert.match(layout, /progressPanel\.style\.setProperty\('grid-column', '1 \/ -1'/);
   assert.match(layout, /restoreProgressPanel/);
 });
@@ -38,7 +38,9 @@ test('first share tap prepares only the selected format and second tap opens nat
   assert.match(share, /button\.dataset\.shareReady = '1'/);
 });
 
-test('new manual share flow has fresh cache versions', () => {
-  assert.match(loader, /share-one-tap\.js\?v=20261015-3/);
-  assert.match(app, /result-loader\.js\?c/);
+test('member advanced UI has fresh lazy-load cache versions', () => {
+  assert.match(loader, /share-one-tap\.js\?v=20261015-4/);
+  assert.match(loader, /advanced-member\.js\?v=20261015-1/);
+  assert.match(loader, /advanced-member\.css\?v=20261015-1/);
+  assert.match(app, /result-loader\.js\?d/);
 });
