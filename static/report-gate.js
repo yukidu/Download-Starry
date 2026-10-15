@@ -53,16 +53,25 @@
     box.querySelector('#drg-register')?.focus();
   }
 
+  function currentResourceUrl() {
+    return String(
+      document.getElementById('download-url')?.value ||
+      document.getElementById('url')?.value ||
+      ''
+    ).trim();
+  }
+
   async function openReport(parsed) {
     if (!await isMember()) {
       openModal();
       return;
     }
-    if (parsed) {
+    const resourceUrl = currentResourceUrl();
+    if (parsed && resourceUrl) {
       try {
         sessionStorage.setItem('downloadstarry.report-draft.v2', JSON.stringify({
           source: 'parsed',
-          url: document.getElementById('url')?.value || '',
+          url: resourceUrl,
           reportedAt: new Date().toISOString(),
         }));
       } catch (_) {}
@@ -73,12 +82,12 @@
   }
 
   document.addEventListener('click', event => {
-    const target = event.target.closest?.('#menu-report-button,#report-download-button');
+    const target = event.target.closest?.('#menu-report-button,#top-report-button');
     if (!target) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    openReport(target.id === 'report-download-button');
+    openReport(target.id === 'top-report-button');
   }, true);
 
-  window.DownloadStarryReportGate = Object.freeze({openModal});
+  window.DownloadStarryReportGate = Object.freeze({openModal, openReport});
 })();
