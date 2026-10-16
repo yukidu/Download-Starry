@@ -1,7 +1,7 @@
 {
-  "name": "繁星下載",
-  "short_name": "繁星下載",
-  "description": "社群影音與照片下載工具",
+  "name": "繁星捕手",
+  "short_name": "繁星捕手",
+  "description": "繁星捕手｜社群影音與照片下載工具",
   "lang": "zh-Hant",
   "start_url": "/",
   "scope": "/",
