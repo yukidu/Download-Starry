@@ -26,6 +26,26 @@ export class VideoDownloader extends Container {
   }
 }
 
+async function enhanceProductionPage(response) {
+  const type = response.headers.get('Content-Type') || '';
+  if (!type.toLowerCase().includes('text/html')) return response;
+
+  let html = await response.text();
+  html = html.replaceAll('繁星下載', '繁星捕手');
+  if (!html.includes('/static/ecosystem-sso.js')) {
+    html = html.replace('</body>', '<script src="/static/ecosystem-sso.js"></script></body>');
+  }
+
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Length');
+  headers.set('Cache-Control', 'private, no-store');
+  return new Response(html, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 async function fetchHandler(request, env, ctx) {
   try {
     const centralSsoResponse = await handleCentralSso(request, env);
@@ -129,7 +149,7 @@ async function fetchHandler(request, env, ctx) {
     return response;
   }
 
-  return handleRequest(request, env);
+  return enhanceProductionPage(await handleRequest(request, env));
 }
 
 export default {fetch: fetchHandler};
