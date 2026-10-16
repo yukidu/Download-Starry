@@ -1,4 +1,3 @@
-/* 16:9 desktop layout: keep the complete downloader in one viewport. */
 .top-download-progress {
   margin: 0 0 10px;
 }
@@ -202,7 +201,6 @@
   }
 }
 
-/* 使用者要求：移除下載區最外層的大型圓角框，只保留裡面的實際控制元件。 */
 .downloader {
   padding: 0;
   border: 0;
@@ -218,7 +216,6 @@
   display: none;
 }
 
-/* 手機效能：移除大型漂浮光球與全畫面光帶掃過。 */
 .cosmic-orb {
   display: none !important;
   animation: none !important;
