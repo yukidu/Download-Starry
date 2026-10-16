@@ -4,12 +4,18 @@ import {readFile} from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('PWA 安裝名稱統一為繁星下載', async () => {
+test('PWA 安裝名稱統一為繁星捕手', async () => {
   const manifest = JSON.parse(await read('static/manifest.webmanifest'));
-  assert.equal(manifest.name, '繁星下載');
-  assert.equal(manifest.short_name, '繁星下載');
+  assert.equal(manifest.name, '繁星捕手');
+  assert.equal(manifest.short_name, '繁星捕手');
   assert.doesNotMatch(await read('static/offline.html'), /繁星回憶/);
-  assert.match(await read('static/app-icon.svg'), /aria-label="繁星下載"/);
+  assert.match(await read('static/app-icon.svg'), /aria-label="繁星捕手"/);
+});
+
+test('網站正式輸出會把舊公開名稱統一成繁星捕手', async () => {
+  const worker = await read('cloudflare/worker.js');
+  assert.match(worker, /replaceAll\('繁星下載', '繁星捕手'\)/);
+  assert.match(worker, /static\/ecosystem-sso\.js/);
 });
 
 test('網站 Logo 與 PWA 安裝圖示共用同一個 App Icon', async () => {
@@ -27,10 +33,12 @@ test('網站 Logo 與 PWA 安裝圖示共用同一個 App Icon', async () => {
   assert.match(icon, /id="star-mark"/);
 });
 
-test('原始 HTML 品牌直接使用繁星下載', async () => {
+test('原始 HTML 品牌會由 Worker 在正式輸出統一為繁星捕手', async () => {
   const template = await read('templates/index.html');
+  const worker = await read('cloudflare/worker.js');
   assert.match(template, /<title>繁星下載（串流影音下載）<\/title>/);
   assert.match(template, /site-brand-text">繁星下載<\/span>/);
+  assert.match(worker, /replaceAll\('繁星下載', '繁星捕手'\)/);
   assert.doesNotMatch(template, /繁星回憶/);
 });
 
