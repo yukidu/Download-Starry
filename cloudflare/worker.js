@@ -31,8 +31,10 @@ async function enhanceProductionPage(response) {
   if (!type.toLowerCase().includes('text/html')) return response;
 
   let html = await response.text();
-  html = html.replaceAll('繁星下載', '繁星捕手');
-  if (!html.includes('/static/ecosystem-sso.js')) {
+  html = html.replaceAll('繁星下載', '繁星捕手').replaceAll('Starry ID', '繁星通行證');
+  if (!html.includes('/static/brand-sync.js')) {
+    html = html.replace('</body>', '<script src="/static/brand-sync.js"></script><script src="/static/ecosystem-sso.js"></script></body>');
+  } else if (!html.includes('/static/ecosystem-sso.js')) {
     html = html.replace('</body>', '<script src="/static/ecosystem-sso.js"></script></body>');
   }
 
@@ -51,7 +53,7 @@ async function fetchHandler(request, env, ctx) {
     const centralSsoResponse = await handleCentralSso(request, env);
     if (centralSsoResponse) return centralSsoResponse;
   } catch {
-    return Response.json({error: 'Starry ID 中央登入服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
+    return Response.json({error: '繁星通行證中央登入服務暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
   }
 
   const url = new URL(request.url);
@@ -92,7 +94,7 @@ async function fetchHandler(request, env, ctx) {
     try {
       const member = await authenticatedDownloadStarryMember(request, env);
       if (!member?.id) {
-        return Response.json({error: '進階功能為會員限定，請先登入 Starry ID'}, {status: 401, headers: {'Cache-Control': 'no-store'}});
+        return Response.json({error: '進階功能為會員限定，請先登入繁星通行證'}, {status: 401, headers: {'Cache-Control': 'no-store'}});
       }
     } catch {
       return Response.json({error: '會員驗證暫時無法使用'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
