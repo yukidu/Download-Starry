@@ -8,10 +8,6 @@ on:
       - '.github/dependabot.yml'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.github/dependabot.yml'
   workflow_dispatch:
 
 permissions:
@@ -70,6 +66,14 @@ jobs:
       - run: pnpm exec wrangler deploy --dry-run --outdir dist/worker
 
   deploy:
+    if: github.event_name == 'pull_request'
+    needs: [python-tests, node-tests, worker-dry-run]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm PR validation passed
+        run: echo "PR validation passed. Production deploy remains main-only."
+
+  production-deploy:
     needs: [python-tests, node-tests, worker-dry-run]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
