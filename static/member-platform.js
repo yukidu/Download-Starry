@@ -11,6 +11,7 @@
     login({chooseAccount = true} = {}) {
       const adapter = native()?.auth;
       if (adapter?.login) return adapter.login({provider: 'google', account: 'starry-id', chooseAccount});
+      if (window.StarryCatcherAuth?.login) return window.StarryCatcherAuth.login();
       window.location.assign(`/api/auth/starry/login${chooseAccount ? '?choose=1' : ''}`);
     },
   });
