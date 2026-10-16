@@ -12,3 +12,10 @@ test('hamburger menu uses one full-viewport overlay on every route and keeps the
   assert.match(css, /\.site-header:has\(\.main-menu-shell:not\(\[hidden\]\)\)\s*\{[\s\S]*backdrop-filter:\s*none!important/);
   assert.doesNotMatch(css, /\.main-menu-shell:not\(\[hidden\]\)::before/);
 });
+
+test('hamburger menu panel shrinks to its content instead of stretching full-page', async () => {
+  const css = await text('static/compact.css');
+  assert.match(css, /\.main-menu-shell:not\(\[hidden\]\)\s+\.main-menu-panel\s*\{[\s\S]*width:\s*max-content!important/);
+  assert.match(css, /height:\s*max-content!important/);
+  assert.match(css, /align-self:\s*flex-start!important/);
+});
