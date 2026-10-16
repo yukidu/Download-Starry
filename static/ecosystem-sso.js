@@ -19,6 +19,23 @@
 
   const text = value => String(value ?? '').trim();
 
+  function normalizeBrand() {
+    if (document.title.includes('繁星下載')) {
+      document.title = document.title.replaceAll('繁星下載', '繁星捕手');
+    }
+    document.querySelectorAll('.site-brand-text').forEach(node => {
+      if (node.textContent?.includes('繁星下載')) node.textContent = node.textContent.replaceAll('繁星下載', '繁星捕手');
+    });
+  }
+
+  function watchBrand() {
+    normalizeBrand();
+    const title = document.querySelector('title');
+    if (title) new MutationObserver(normalizeBrand).observe(title, {childList: true, characterData: true, subtree: true});
+    window.setTimeout(normalizeBrand, 200);
+    window.setTimeout(normalizeBrand, 1000);
+  }
+
   function reloadOnce() {
     if (reloading) return;
     reloading = true;
@@ -241,22 +258,29 @@
     return response;
   });
 
-  // Capture the legacy login URL before it redirects to id.starry.phd.
+  // Capture old login controls before any redirect fallback can leave this app.
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
-    const login = target.closest(`a[href^="${LOCAL_LOGIN}"],button[data-starry-login],button[data-member-login]`);
+    const login = target.closest(`#dsr-login,a[href^="${LOCAL_LOGIN}"],button[data-starry-login],button[data-member-login]`);
     if (!login) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     showLogin();
   }, true);
 
+  watchBrand();
   loadGoogle();
-  window.addEventListener('focus', () => void sync());
+  window.addEventListener('focus', () => {
+    normalizeBrand();
+    void sync();
+  });
   window.addEventListener('online', () => void sync(true));
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') void sync();
+    if (document.visibilityState === 'visible') {
+      normalizeBrand();
+      void sync();
+    }
   });
   window.setTimeout(() => void sync(true), 0);
 
