@@ -2,7 +2,16 @@ name: Test and deploy to Cloudflare
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
   pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +22,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  python-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,15 +32,30 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
+      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python -m pip install -r requirements.txt pytest
-      - run: python -m pytest -q
       - run: node --test tests/*.test.js
+
+  worker-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: '11.25.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Resolve pnpm store path
         shell: bash
         run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
@@ -46,8 +70,7 @@ jobs:
       - run: pnpm exec wrangler deploy --dry-run --outdir dist/worker
 
   deploy:
-    needs: test
-    # Enable this variable only after pricing approval and secrets are configured.
+    needs: [python-tests, node-tests, worker-dry-run]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
