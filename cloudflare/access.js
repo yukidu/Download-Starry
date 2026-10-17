@@ -67,19 +67,22 @@ export async function handleRequest(request, env) {
   try {
     // Every job, progress request and file transfer must reach the same instance.
     const container = env.DOWNLOADER.getByName('personal-downloader');
-    // Retry only page resources: never repeat a download-creation POST.
-    const retryable = ['GET', 'HEAD'].includes(request.method) &&
-      (PAGE_ROUTES.has(path) || path.startsWith('/static/'));
+    // GET/HEAD are idempotent. Progress polling gets extra retries so a brief
+    // container wake/reconnect never turns an active download into a hard failure.
+    const retryable = ['GET', 'HEAD'].includes(request.method);
+    const progressRequest = /^\/api\/download\/[a-f0-9]{32}\/progress$/.test(path);
+    const maxAttempts = progressRequest ? 8 : retryable ? 3 : 1;
     let response;
-    for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         response = await container.fetch(retryable ? forwarded.clone() : forwarded);
-        if (!retryable || response.status < 500 || attempt === 2) break;
+        if (!retryable || response.status < 500 || attempt === maxAttempts - 1) break;
         await response.body?.cancel();
       } catch (error) {
-        if (!retryable || attempt === 2) throw error;
+        if (!retryable || attempt === maxAttempts - 1) throw error;
       }
-      await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+      const delay = progressRequest ? Math.min(250 * (attempt + 1), 1000) : 250 * (attempt + 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
     if (response.status >= 500 && !response.headers.get('Content-Type')?.includes('application/json')) {
       await response.body?.cancel();
